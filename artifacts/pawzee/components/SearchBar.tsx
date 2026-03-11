@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "Inter_400Regular",
     color: Colors.text,
-    ...(Platform.OS === "web" ? { outlineStyle: "none" as any } : {}),
+    ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as Record<string, string>) : {}),
   },
   clearBtn: {
     padding: 4,

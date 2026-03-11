@@ -123,11 +123,12 @@ export async function uploadPhoto(uri: string): Promise<string> {
   const match = /\.(\w+)$/.exec(filename);
   const type = match ? `image/${match[1] === "jpg" ? "jpeg" : match[1]}` : "image/jpeg";
 
-  formData.append("photo", {
+  const photoBlob: Record<string, string> = {
     uri,
     name: filename,
     type,
-  } as any);
+  };
+  formData.append("photo", photoBlob as unknown as Blob);
 
   const res = await fetch(`${base}/api/upload`, {
     method: "POST",
