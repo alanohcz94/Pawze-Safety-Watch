@@ -10,19 +10,9 @@ import {
   Platform,
   ActivityIndicator,
 } from "react-native";
-import * as Location from "expo-location";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Colors from "@/constants/colors";
-import { haversineDistance } from "@/lib/hazards";
-
-interface VetClinic {
-  id: string;
-  name: string;
-  address: string;
-  lat: number;
-  lng: number;
-  distance: number;
-}
+import { fetchNearbyVets, type VetClinic } from "@/lib/api";
 
 interface EmergencyVetSheetProps {
   visible: boolean;
@@ -51,66 +41,23 @@ export function EmergencyVetSheet({
     setLoading(true);
     setVets([]);
 
-    const searchQueries = [
-      "emergency veterinary clinic",
-      "24 hour vet hospital",
-      "animal emergency center",
-      "veterinary emergency",
-      "pet emergency hospital",
-    ];
+    const lat = userLat ?? 37.7749;
+    const lng = userLng ?? -122.4194;
 
-    const centerLat = userLat ?? 37.7749;
-    const centerLng = userLng ?? -122.4194;
-
-    const results: VetClinic[] = [];
-    const seenNames = new Set<string>();
-
-    for (const query of searchQueries) {
-      try {
-        const geocoded = await Location.geocodeAsync(
-          `${query} near ${centerLat.toFixed(3)},${centerLng.toFixed(3)}`,
-        );
-
-        for (let i = 0; i < Math.min(geocoded.length, 2); i++) {
-          const g = geocoded[i];
-          const dist = haversineDistance(centerLat, centerLng, g.latitude, g.longitude);
-          if (dist > 50000) continue;
-
-          let name = query.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-          let address = `${g.latitude.toFixed(4)}, ${g.longitude.toFixed(4)}`;
-
-          try {
-            const reverse = await Location.reverseGeocodeAsync({
-              latitude: g.latitude,
-              longitude: g.longitude,
-            });
-            if (reverse.length > 0) {
-              const r = reverse[0];
-              if (r.name && r.name !== address) name = r.name;
-              const parts = [r.street, r.city, r.region].filter(Boolean);
-              if (parts.length > 0) address = parts.join(", ");
-            }
-          } catch {}
-
-          if (seenNames.has(name)) continue;
-          seenNames.add(name);
-
-          results.push({
-            id: `${g.latitude}-${g.longitude}-${i}`,
-            name,
-            address,
-            lat: g.latitude,
-            lng: g.longitude,
-            distance: Math.round(dist),
-          });
-        }
-      } catch {}
+    try {
+      const results = await fetchNearbyVets(lat, lng, 15000);
+      setVets(results);
+    } catch {
+      setVets([]);
     }
 
-    results.sort((a, b) => a.distance - b.distance);
-    setVets(results.slice(0, 8));
     setLoading(false);
     setSearchDone(true);
+  };
+
+  const handleCall = (phone: string) => {
+    const cleaned = phone.replace(/[^\d+]/g, "");
+    Linking.openURL(`tel:${cleaned}`);
   };
 
   const handleNavigate = (vet: VetClinic) => {
@@ -139,7 +86,14 @@ export function EmergencyVetSheet({
         <MaterialCommunityIcons name="hospital-building" size={24} color={Colors.accent} />
       </View>
       <View style={styles.vetInfo}>
-        <Text style={styles.vetName} numberOfLines={1}>{item.name}</Text>
+        <View style={styles.vetNameRow}>
+          <Text style={styles.vetName} numberOfLines={1}>{item.name}</Text>
+          {item.emergency && (
+            <View style={styles.emergencyTag}>
+              <Text style={styles.emergencyTagText}>24h</Text>
+            </View>
+          )}
+        </View>
         <Text style={styles.vetAddress} numberOfLines={1}>{item.address}</Text>
         <Text style={styles.vetDistance}>
           {item.distance < 1000
@@ -147,12 +101,22 @@ export function EmergencyVetSheet({
             : `${(item.distance / 1000).toFixed(1)}km away`}
         </Text>
       </View>
-      <Pressable
-        style={[styles.vetActionBtn, styles.navBtn]}
-        onPress={() => handleNavigate(item)}
-      >
-        <Ionicons name="navigate" size={18} color={Colors.primary} />
-      </Pressable>
+      <View style={styles.vetActions}>
+        {item.phone && (
+          <Pressable
+            style={[styles.vetActionBtn, styles.callBtn]}
+            onPress={() => handleCall(item.phone!)}
+          >
+            <Ionicons name="call" size={16} color={Colors.success} />
+          </Pressable>
+        )}
+        <Pressable
+          style={[styles.vetActionBtn, styles.navBtn]}
+          onPress={() => handleNavigate(item)}
+        >
+          <Ionicons name="navigate" size={16} color={Colors.primary} />
+        </Pressable>
+      </View>
     </View>
   );
 
@@ -172,7 +136,7 @@ export function EmergencyVetSheet({
             </Pressable>
           </View>
 
-          <Text style={styles.sheetSubtitle}>Nearest emergency veterinary clinics</Text>
+          <Text style={styles.sheetSubtitle}>Nearest veterinary clinics from OpenStreetMap</Text>
 
           {loading ? (
             <View style={styles.loaderContainer}>
@@ -189,7 +153,7 @@ export function EmergencyVetSheet({
               ListFooterComponent={
                 <Pressable style={styles.searchMapsBtn} onPress={handleSearchMaps}>
                   <Ionicons name="map-outline" size={18} color={Colors.primary} />
-                  <Text style={styles.searchMapsText}>Search in Maps app</Text>
+                  <Text style={styles.searchMapsText}>Open in Maps app</Text>
                 </Pressable>
               }
             />
@@ -197,9 +161,10 @@ export function EmergencyVetSheet({
             <View style={styles.emptyContainer}>
               <MaterialCommunityIcons name="map-search" size={48} color={Colors.textTertiary} />
               <Text style={styles.emptyText}>No clinics found nearby</Text>
+              <Text style={styles.emptySubtext}>Try searching in your Maps app instead</Text>
               <Pressable style={styles.searchMapsBtn} onPress={handleSearchMaps}>
                 <Ionicons name="map-outline" size={18} color={Colors.primary} />
-                <Text style={styles.searchMapsText}>Search in Maps app</Text>
+                <Text style={styles.searchMapsText}>Open in Maps app</Text>
               </Pressable>
             </View>
           )}
@@ -304,10 +269,27 @@ const styles = StyleSheet.create({
   vetInfo: {
     flex: 1,
   },
+  vetNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
   vetName: {
     fontSize: 15,
     fontFamily: "Inter_600SemiBold",
     color: Colors.text,
+    flexShrink: 1,
+  },
+  emergencyTag: {
+    backgroundColor: Colors.accent,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  emergencyTagText: {
+    fontSize: 10,
+    fontFamily: "Inter_700Bold",
+    color: "#FFF",
   },
   vetAddress: {
     fontSize: 12,
@@ -321,12 +303,19 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     marginTop: 2,
   },
+  vetActions: {
+    flexDirection: "row",
+    gap: 6,
+  },
   vetActionBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: "center",
     justifyContent: "center",
+  },
+  callBtn: {
+    backgroundColor: "#E8F8F0",
   },
   navBtn: {
     backgroundColor: Colors.primaryLight,
@@ -356,5 +345,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Inter_500Medium",
     color: Colors.textSecondary,
+  },
+  emptySubtext: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: Colors.textTertiary,
   },
 });

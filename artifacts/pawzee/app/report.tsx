@@ -21,7 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import { HazardIcon } from "@/components/HazardIcon";
 import { HAZARD_CATEGORIES, HAZARD_CONFIGS, type HazardCategory } from "@/lib/hazards";
-import { createHazard } from "@/lib/api";
+import { createHazard, uploadPhoto } from "@/lib/api";
 
 export default function ReportScreen() {
   const insets = useSafeAreaInsets();
@@ -108,11 +108,20 @@ export default function ReportScreen() {
     setSubmitting(true);
 
     try {
+      let uploadedPhotoUrl: string | null = null;
+      if (photoUri) {
+        try {
+          uploadedPhotoUrl = await uploadPhoto(photoUri);
+        } catch {
+          uploadedPhotoUrl = null;
+        }
+      }
+
       await createHazard({
         category: selectedCategory,
         lat: location.lat,
         lng: location.lng,
-        photoUrl: photoUri,
+        photoUrl: uploadedPhotoUrl,
       });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

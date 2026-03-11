@@ -117,8 +117,10 @@ export default function MapScreen() {
   const [summary, setSummary] = useState<HazardSummary | null>(null);
   const [zoomLevel, setZoomLevel] = useState(15);
 
-  const centerLat = userLocation?.lat ?? DEFAULT_REGION.latitude;
-  const centerLng = userLocation?.lng ?? DEFAULT_REGION.longitude;
+  const [queryCenter, setQueryCenter] = useState<{ lat: number; lng: number } | null>(null);
+
+  const centerLat = queryCenter?.lat ?? userLocation?.lat ?? DEFAULT_REGION.latitude;
+  const centerLng = queryCenter?.lng ?? userLocation?.lng ?? DEFAULT_REGION.longitude;
 
   const { data: hazards = [], refetch: refetchHazards } = useQuery({
     queryKey: ["hazards", centerLat, centerLng],
@@ -195,12 +197,11 @@ export default function MapScreen() {
         };
         mapRef.current?.animateToRegion(newRegion, 600);
         setSearchLocation(query);
+        setQueryCenter({ lat: latitude, lng: longitude });
 
         const summaryData = await fetchHazardSummary(latitude, longitude, 5000);
         setSummary(summaryData);
         setShowSummary(true);
-
-        queryClient.invalidateQueries({ queryKey: ["hazards"] });
       } else {
         Alert.alert("Not Found", "Could not find that location.");
       }
@@ -235,6 +236,8 @@ export default function MapScreen() {
         longitudeDelta: 0.01,
       };
       mapRef.current?.animateToRegion(newRegion, 500);
+      setQueryCenter(null);
+      setShowSummary(false);
     }
   };
 

@@ -1,4 +1,5 @@
 import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 
 function getApiBaseUrl(): string {
   if (process.env.EXPO_PUBLIC_DOMAIN) {
@@ -32,6 +33,18 @@ export interface HazardSummary {
   hazardsToday: number;
   activeHazards: number;
   breakdown: Record<string, number>;
+}
+
+export interface VetClinic {
+  id: string;
+  name: string;
+  address: string;
+  phone: string | null;
+  website: string | null;
+  lat: number;
+  lng: number;
+  distance: number;
+  emergency: boolean;
 }
 
 export async function fetchHazards(lat: number, lng: number, radius?: number): Promise<HazardItem[]> {
@@ -100,4 +113,48 @@ export async function fetchHazardSummary(lat: number, lng: number, radius?: numb
   });
   if (!res.ok) throw new Error("Failed to fetch summary");
   return res.json();
+}
+
+export async function uploadPhoto(uri: string): Promise<string> {
+  const base = getApiBaseUrl();
+  const formData = new FormData();
+
+  const filename = uri.split("/").pop() || "photo.jpg";
+  const match = /\.(\w+)$/.exec(filename);
+  const type = match ? `image/${match[1] === "jpg" ? "jpeg" : match[1]}` : "image/jpeg";
+
+  formData.append("photo", {
+    uri,
+    name: filename,
+    type,
+  } as any);
+
+  const res = await fetch(`${base}/api/upload`, {
+    method: "POST",
+    headers: await getAuthHeaders(),
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Upload failed" }));
+    throw new Error(err.error || "Failed to upload photo");
+  }
+
+  const data = await res.json();
+  return data.photoUrl;
+}
+
+export async function fetchNearbyVets(lat: number, lng: number, radius?: number): Promise<VetClinic[]> {
+  const base = getApiBaseUrl();
+  const params = new URLSearchParams({
+    lat: String(lat),
+    lng: String(lng),
+  });
+  if (radius) params.set("radius", String(radius));
+  const res = await fetch(`${base}/api/vets/nearby?${params}`, {
+    headers: await getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to fetch nearby vets");
+  const data = await res.json();
+  return data.vets;
 }
