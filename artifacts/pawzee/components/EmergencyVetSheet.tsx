@@ -167,17 +167,13 @@ export function EmergencyVetSheet({
         </Text>
       </View>
       <View style={styles.vetActions}>
-        {item.phone ? (
+        {item.phone && (
           <Pressable
             style={[styles.vetActionBtn, styles.callBtn]}
             onPress={() => handleCall(item.phone!)}
           >
             <Ionicons name="call" size={16} color={Colors.success} />
           </Pressable>
-        ) : (
-          <View style={[styles.vetActionBtn, styles.callBtnDisabled]}>
-            <Ionicons name="call" size={16} color={Colors.textTertiary} />
-          </View>
         )}
         <Pressable
           style={[styles.vetActionBtn, styles.navBtn]}
@@ -385,10 +381,6 @@ const styles = StyleSheet.create({
   },
   callBtn: {
     backgroundColor: "#E8F8F0",
-  },
-  callBtnDisabled: {
-    backgroundColor: Colors.surfaceSecondary,
-    opacity: 0.5,
   },
   navBtn: {
     backgroundColor: Colors.primaryLight,
