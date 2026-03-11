@@ -1,0 +1,354 @@
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  Modal,
+  Alert,
+  Linking,
+  Platform,
+  ActivityIndicator,
+} from "react-native";
+import { Image } from "expo-image";
+import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import Colors from "@/constants/colors";
+import { HazardIcon } from "./HazardIcon";
+import {
+  HAZARD_CONFIGS,
+  formatTimeAgo,
+  formatTimeRemaining,
+  formatDistance,
+  haversineDistance,
+  type HazardCategory,
+} from "@/lib/hazards";
+import type { HazardItem } from "@/lib/api";
+import { confirmHazard } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+
+interface HazardDetailSheetProps {
+  hazard: HazardItem | null;
+  visible: boolean;
+  onClose: () => void;
+  userLat: number | null;
+  userLng: number | null;
+  onConfirmed: () => void;
+}
+
+export function HazardDetailSheet({
+  hazard,
+  visible,
+  onClose,
+  userLat,
+  userLng,
+  onConfirmed,
+}: HazardDetailSheetProps) {
+  const { isAuthenticated, login } = useAuth();
+  const [confirming, setConfirming] = useState(false);
+  const [photoVisible, setPhotoVisible] = useState(false);
+
+  if (!hazard) return null;
+
+  const config = HAZARD_CONFIGS[hazard.category as HazardCategory] || HAZARD_CONFIGS.other;
+  const distance =
+    userLat != null && userLng != null
+      ? haversineDistance(userLat, userLng, hazard.lat, hazard.lng)
+      : null;
+
+  const canConfirm = distance != null && distance <= 10;
+
+  const handleConfirm = async () => {
+    if (!isAuthenticated) {
+      Alert.alert("Login Required", "Please log in to confirm hazards.", [
+        { text: "Cancel" },
+        { text: "Log In", onPress: login },
+      ]);
+      return;
+    }
+    if (userLat == null || userLng == null) return;
+    setConfirming(true);
+    try {
+      await confirmHazard(hazard.id, userLat, userLng);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      onConfirmed();
+      onClose();
+    } catch (err: any) {
+      Alert.alert("Cannot Confirm", err.message || "Failed to confirm hazard");
+    } finally {
+      setConfirming(false);
+    }
+  };
+
+  const handleNavigate = () => {
+    const url = Platform.select({
+      ios: `maps:?daddr=${hazard.lat},${hazard.lng}`,
+      android: `google.navigation:q=${hazard.lat},${hazard.lng}`,
+      default: `https://www.google.com/maps/dir/?api=1&destination=${hazard.lat},${hazard.lng}`,
+    });
+    Linking.openURL(url);
+  };
+
+  return (
+    <>
+      <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+        <View style={styles.overlay}>
+          <Pressable style={styles.backdrop} onPress={onClose} />
+          <View style={styles.sheet}>
+            <View style={styles.grabber} />
+
+            {hazard.photoUrl && (
+              <Pressable onPress={() => setPhotoVisible(true)}>
+                <Image
+                  source={{ uri: hazard.photoUrl }}
+                  style={styles.photo}
+                  contentFit="cover"
+                />
+              </Pressable>
+            )}
+
+            <View style={styles.header}>
+              <HazardIcon category={hazard.category as HazardCategory} size={44} />
+              <View style={styles.headerText}>
+                <Text style={styles.title}>{config.label}</Text>
+                {hazard.reportedByName && (
+                  <Text style={styles.subtitle}>
+                    Reported by {hazard.reportedByName}
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.stats}>
+              <View style={styles.stat}>
+                <Ionicons name="time-outline" size={18} color={Colors.textSecondary} />
+                <Text style={styles.statText}>
+                  Reported {formatTimeAgo(hazard.reportedAt)}
+                </Text>
+              </View>
+              <View style={styles.stat}>
+                <Ionicons name="people-outline" size={18} color={Colors.textSecondary} />
+                <Text style={styles.statText}>
+                  {hazard.confirmationCount} confirmation{hazard.confirmationCount !== 1 ? "s" : ""}
+                </Text>
+              </View>
+              <View style={styles.stat}>
+                <Ionicons name="timer-outline" size={18} color={Colors.textSecondary} />
+                <Text style={styles.statText}>
+                  Expires in {formatTimeRemaining(hazard.expiresAt)}
+                </Text>
+              </View>
+              {distance != null && (
+                <View style={styles.stat}>
+                  <Ionicons name="location-outline" size={18} color={Colors.textSecondary} />
+                  <Text style={styles.statText}>{formatDistance(distance)}</Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.actions}>
+              <Pressable
+                style={[styles.actionBtn, styles.navigateBtn]}
+                onPress={handleNavigate}
+              >
+                <Ionicons name="navigate" size={20} color="#FFF" />
+                <Text style={styles.actionBtnTextLight}>Navigate</Text>
+              </Pressable>
+
+              {hazard.photoUrl && (
+                <Pressable
+                  style={[styles.actionBtn, styles.photoBtn]}
+                  onPress={() => setPhotoVisible(true)}
+                >
+                  <Ionicons name="image-outline" size={20} color={Colors.primary} />
+                  <Text style={styles.actionBtnText}>View Photo</Text>
+                </Pressable>
+              )}
+            </View>
+
+            {canConfirm && (
+              <Pressable
+                style={[styles.confirmBtn, confirming && styles.confirmBtnDisabled]}
+                onPress={handleConfirm}
+                disabled={confirming}
+              >
+                {confirming ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+                    <Text style={styles.confirmBtnText}>Confirm Hazard</Text>
+                  </>
+                )}
+              </Pressable>
+            )}
+
+            {distance != null && !canConfirm && (
+              <Text style={styles.tooFarText}>
+                Move within 10m to confirm this hazard
+              </Text>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={photoVisible} animationType="fade" onRequestClose={() => setPhotoVisible(false)}>
+        <View style={styles.fullPhotoContainer}>
+          <Pressable style={styles.closePhotoBtn} onPress={() => setPhotoVisible(false)}>
+            <Ionicons name="close" size={28} color="#FFF" />
+          </Pressable>
+          {hazard.photoUrl && (
+            <Image
+              source={{ uri: hazard.photoUrl }}
+              style={styles.fullPhoto}
+              contentFit="contain"
+            />
+          )}
+        </View>
+      </Modal>
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  backdrop: {
+    flex: 1,
+    backgroundColor: Colors.overlay,
+  },
+  sheet: {
+    backgroundColor: Colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+  },
+  grabber: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.border,
+    alignSelf: "center",
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  photo: {
+    width: "100%",
+    height: 160,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 16,
+  },
+  headerText: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 20,
+    fontFamily: "Inter_700Bold",
+    color: Colors.text,
+  },
+  subtitle: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  stats: {
+    gap: 10,
+    marginBottom: 20,
+  },
+  stat: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  statText: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    color: Colors.textSecondary,
+  },
+  actions: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 16,
+  },
+  actionBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  navigateBtn: {
+    backgroundColor: Colors.primary,
+  },
+  photoBtn: {
+    backgroundColor: Colors.primaryLight,
+  },
+  actionBtnTextLight: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFF",
+  },
+  actionBtnText: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.primary,
+  },
+  confirmBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: Colors.success,
+  },
+  confirmBtnDisabled: {
+    opacity: 0.6,
+  },
+  confirmBtnText: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFF",
+  },
+  tooFarText: {
+    textAlign: "center",
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: Colors.textTertiary,
+    marginTop: 4,
+  },
+  fullPhotoContainer: {
+    flex: 1,
+    backgroundColor: "#000",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  closePhotoBtn: {
+    position: "absolute",
+    top: 60,
+    right: 20,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  fullPhoto: {
+    width: "100%",
+    height: "80%",
+  },
+});

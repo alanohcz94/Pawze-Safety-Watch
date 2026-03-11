@@ -5,7 +5,8 @@
  * Pawzee API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { HazardItem } from "./hazardItem";
 
-export interface HealthStatus {
-  status: string;
+export interface HazardListResponse {
+  hazards: HazardItem[];
 }
