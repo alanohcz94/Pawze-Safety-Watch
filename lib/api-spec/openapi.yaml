@@ -14,6 +14,10 @@ tags:
     description: Browser and mobile authentication endpoints.
   - name: hazards
     description: Hazard reporting and viewing
+  - name: uploads
+    description: Photo upload and retrieval
+  - name: vets
+    description: Veterinary clinic search
 paths:
   /healthz:
     get:
@@ -224,6 +228,93 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /upload:
+    post:
+      tags: [uploads]
+      operationId: uploadPhoto
+      summary: Upload a hazard photo
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/SessionCookie'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                photo:
+                  type: string
+                  format: binary
+              required:
+                - photo
+      responses:
+        '200':
+          description: Photo uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadPhotoResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /uploads/{filename}:
+    get:
+      tags: [uploads]
+      operationId: getUploadedFile
+      summary: Retrieve an uploaded file
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The uploaded file
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /vets/nearby:
+    get:
+      tags: [vets]
+      operationId: getNearbyVets
+      summary: Find nearby veterinary clinics using OpenStreetMap
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: lng
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: radius
+          in: query
+          required: false
+          description: Search radius in meters (default 10000, max 50000)
+          schema:
+            type: number
+      responses:
+        '200':
+          description: List of nearby vet clinics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VetListResponse'
   /hazards/summary:
     get:
       tags: [hazards]
@@ -404,6 +495,47 @@ components:
           type: number
         lng:
           type: number
+    UploadPhotoResponse:
+      type: object
+      required: [photoUrl]
+      properties:
+        photoUrl:
+          type: string
+          format: uri
+    VetClinic:
+      type: object
+      required: [id, name, address, lat, lng, distance, emergency]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        address:
+          type: string
+        phone:
+          type: [string, 'null']
+        website:
+          type: [string, 'null']
+        lat:
+          type: number
+        lng:
+          type: number
+        distance:
+          type: integer
+          description: Distance in meters from query point
+        emergency:
+          type: boolean
+          description: Whether clinic is marked as 24h/emergency
+    VetListResponse:
+      type: object
+      required: [vets]
+      properties:
+        vets:
+          type: array
+          items:
+            $ref: '#/components/schemas/VetClinic'
+        error:
+          type: string
     HazardSummaryResponse:
       type: object
       required: [hazardsToday, activeHazards, breakdown]

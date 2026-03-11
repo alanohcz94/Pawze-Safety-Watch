@@ -194,6 +194,59 @@ export const ConfirmHazardResponse = zod.object({
 });
 
 /**
+ * @summary Upload a hazard photo
+ */
+export const UploadPhotoHeader = zod.object({
+  Authorization: zod.string().optional(),
+});
+
+export const UploadPhotoBody = zod.object({
+  photo: zod.instanceof(File),
+});
+
+export const UploadPhotoResponse = zod.object({
+  photoUrl: zod.string().url(),
+});
+
+/**
+ * @summary Retrieve an uploaded file
+ */
+export const GetUploadedFileParams = zod.object({
+  filename: zod.coerce.string(),
+});
+
+/**
+ * @summary Find nearby veterinary clinics using OpenStreetMap
+ */
+export const GetNearbyVetsQueryParams = zod.object({
+  lat: zod.coerce.number(),
+  lng: zod.coerce.number(),
+  radius: zod.coerce
+    .number()
+    .optional()
+    .describe("Search radius in meters (default 10000, max 50000)"),
+});
+
+export const GetNearbyVetsResponse = zod.object({
+  vets: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+      address: zod.string(),
+      phone: zod.string().nullish(),
+      website: zod.string().nullish(),
+      lat: zod.number(),
+      lng: zod.number(),
+      distance: zod.number().describe("Distance in meters from query point"),
+      emergency: zod
+        .boolean()
+        .describe("Whether clinic is marked as 24h\/emergency"),
+    }),
+  ),
+  error: zod.string().optional(),
+});
+
+/**
  * @summary Get hazard summary for an area
  */
 export const GetHazardSummaryQueryParams = zod.object({

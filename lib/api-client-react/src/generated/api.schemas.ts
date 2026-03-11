@@ -100,6 +100,31 @@ export interface ConfirmHazardRequest {
   lng: number;
 }
 
+export interface UploadPhotoResponse {
+  photoUrl: string;
+}
+
+export interface VetClinic {
+  id: string;
+  name: string;
+  address: string;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  website?: string | null;
+  lat: number;
+  lng: number;
+  /** Distance in meters from query point */
+  distance: number;
+  /** Whether clinic is marked as 24h/emergency */
+  emergency: boolean;
+}
+
+export interface VetListResponse {
+  vets: VetClinic[];
+  error?: string;
+}
+
 export type HazardSummaryResponseBreakdown = { [key: string]: number };
 
 export interface HazardSummaryResponse {
@@ -125,6 +150,19 @@ export type ListHazardsParams = {
   lng: number;
   /**
    * Radius in meters (default 5000)
+   */
+  radius?: number;
+};
+
+export type UploadPhotoBody = {
+  photo: Blob;
+};
+
+export type GetNearbyVetsParams = {
+  lat: number;
+  lng: number;
+  /**
+   * Search radius in meters (default 10000, max 50000)
    */
   radius?: number;
 };

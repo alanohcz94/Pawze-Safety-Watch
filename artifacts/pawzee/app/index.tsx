@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import MapViewWrapper from "@/components/MapViewWrapper";
+import type MapView from "react-native-maps";
 
 interface Region {
   latitude: number;

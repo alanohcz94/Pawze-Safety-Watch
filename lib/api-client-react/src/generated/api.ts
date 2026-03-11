@@ -23,6 +23,7 @@ import type {
   CreateHazardRequest,
   ErrorEnvelope,
   GetHazardSummaryParams,
+  GetNearbyVetsParams,
   HandleBrowserLoginCallbackParams,
   HazardItem,
   HazardListResponse,
@@ -32,6 +33,9 @@ import type {
   LogoutSuccess,
   MobileTokenExchangeRequest,
   MobileTokenExchangeSuccess,
+  UploadPhotoBody,
+  UploadPhotoResponse,
+  VetListResponse,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -909,6 +913,276 @@ export const useConfirmHazard = <
 > => {
   return useMutation(getConfirmHazardMutationOptions(options));
 };
+
+/**
+ * @summary Upload a hazard photo
+ */
+export const getUploadPhotoUrl = () => {
+  return `/api/upload`;
+};
+
+export const uploadPhoto = async (
+  uploadPhotoBody: UploadPhotoBody,
+  options?: RequestInit,
+): Promise<UploadPhotoResponse> => {
+  const formData = new FormData();
+  formData.append(`photo`, uploadPhotoBody.photo);
+
+  return customFetch<UploadPhotoResponse>(getUploadPhotoUrl(), {
+    ...options,
+    method: "POST",
+    body: formData,
+  });
+};
+
+export const getUploadPhotoMutationOptions = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadPhoto>>,
+    TError,
+    { data: BodyType<UploadPhotoBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof uploadPhoto>>,
+  TError,
+  { data: BodyType<UploadPhotoBody> },
+  TContext
+> => {
+  const mutationKey = ["uploadPhoto"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof uploadPhoto>>,
+    { data: BodyType<UploadPhotoBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return uploadPhoto(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UploadPhotoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof uploadPhoto>>
+>;
+export type UploadPhotoMutationBody = BodyType<UploadPhotoBody>;
+export type UploadPhotoMutationError = ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary Upload a hazard photo
+ */
+export const useUploadPhoto = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadPhoto>>,
+    TError,
+    { data: BodyType<UploadPhotoBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof uploadPhoto>>,
+  TError,
+  { data: BodyType<UploadPhotoBody> },
+  TContext
+> => {
+  return useMutation(getUploadPhotoMutationOptions(options));
+};
+
+/**
+ * @summary Retrieve an uploaded file
+ */
+export const getGetUploadedFileUrl = (filename: string) => {
+  return `/api/uploads/${filename}`;
+};
+
+export const getUploadedFile = async (
+  filename: string,
+  options?: RequestInit,
+): Promise<Blob> => {
+  return customFetch<Blob>(getGetUploadedFileUrl(filename), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetUploadedFileQueryKey = (filename: string) => {
+  return [`/api/uploads/${filename}`] as const;
+};
+
+export const getGetUploadedFileQueryOptions = <
+  TData = Awaited<ReturnType<typeof getUploadedFile>>,
+  TError = ErrorType<ErrorEnvelope>,
+>(
+  filename: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getUploadedFile>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetUploadedFileQueryKey(filename);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getUploadedFile>>> = ({
+    signal,
+  }) => getUploadedFile(filename, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!filename,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getUploadedFile>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetUploadedFileQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getUploadedFile>>
+>;
+export type GetUploadedFileQueryError = ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary Retrieve an uploaded file
+ */
+
+export function useGetUploadedFile<
+  TData = Awaited<ReturnType<typeof getUploadedFile>>,
+  TError = ErrorType<ErrorEnvelope>,
+>(
+  filename: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getUploadedFile>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetUploadedFileQueryOptions(filename, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Find nearby veterinary clinics using OpenStreetMap
+ */
+export const getGetNearbyVetsUrl = (params: GetNearbyVetsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/vets/nearby?${stringifiedParams}`
+    : `/api/vets/nearby`;
+};
+
+export const getNearbyVets = async (
+  params: GetNearbyVetsParams,
+  options?: RequestInit,
+): Promise<VetListResponse> => {
+  return customFetch<VetListResponse>(getGetNearbyVetsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetNearbyVetsQueryKey = (params?: GetNearbyVetsParams) => {
+  return [`/api/vets/nearby`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetNearbyVetsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getNearbyVets>>,
+  TError = ErrorType<unknown>,
+>(
+  params: GetNearbyVetsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getNearbyVets>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetNearbyVetsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getNearbyVets>>> = ({
+    signal,
+  }) => getNearbyVets(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getNearbyVets>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetNearbyVetsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getNearbyVets>>
+>;
+export type GetNearbyVetsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Find nearby veterinary clinics using OpenStreetMap
+ */
+
+export function useGetNearbyVets<
+  TData = Awaited<ReturnType<typeof getNearbyVets>>,
+  TError = ErrorType<unknown>,
+>(
+  params: GetNearbyVetsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getNearbyVets>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetNearbyVetsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Get hazard summary for an area
