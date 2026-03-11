@@ -9,6 +9,7 @@ import {
   Linking,
   Platform,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Colors from "@/constants/colors";
@@ -167,14 +168,12 @@ export function EmergencyVetSheet({
         </Text>
       </View>
       <View style={styles.vetActions}>
-        {item.phone && (
-          <Pressable
-            style={[styles.vetActionBtn, styles.callBtn]}
-            onPress={() => handleCall(item.phone!)}
-          >
-            <Ionicons name="call" size={16} color={Colors.success} />
-          </Pressable>
-        )}
+        <Pressable
+          style={[styles.vetActionBtn, styles.callBtn, !item.phone && styles.callBtnDisabled]}
+          onPress={() => item.phone ? handleCall(item.phone) : Alert.alert("No Phone", "No phone number available for this clinic.")}
+        >
+          <Ionicons name="call" size={16} color={item.phone ? Colors.success : Colors.textTertiary} />
+        </Pressable>
         <Pressable
           style={[styles.vetActionBtn, styles.navBtn]}
           onPress={() => handleNavigate(item)}
@@ -381,6 +380,10 @@ const styles = StyleSheet.create({
   },
   callBtn: {
     backgroundColor: "#E8F8F0",
+  },
+  callBtnDisabled: {
+    backgroundColor: Colors.surfaceSecondary,
+    opacity: 0.5,
   },
   navBtn: {
     backgroundColor: Colors.primaryLight,
