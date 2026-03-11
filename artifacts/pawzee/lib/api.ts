@@ -84,15 +84,17 @@ export async function createHazard(body: {
   return res.json();
 }
 
-export async function confirmHazard(id: string, lat: number, lng: number): Promise<HazardItem> {
+export async function confirmHazard(id: string, lat: number, lng: number, photoUrl?: string): Promise<HazardItem> {
   const base = getApiBaseUrl();
+  const body: Record<string, unknown> = { lat, lng };
+  if (photoUrl) body.photoUrl = photoUrl;
   const res = await fetch(`${base}/api/hazards/${id}/confirm`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       ...(await getAuthHeaders()),
     },
-    body: JSON.stringify({ lat, lng }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Failed" }));

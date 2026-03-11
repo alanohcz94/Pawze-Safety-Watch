@@ -13,6 +13,47 @@ import {
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Colors from "@/constants/colors";
 import { fetchNearbyVets, type VetClinic } from "@/lib/api";
+import { haversineDistance } from "@/lib/hazards";
+
+const SINGAPORE_ER_VETS: VetClinic[] = [
+  {
+    id: "sg-er-1",
+    name: "Animal Recovery Veterinary Referral Centre",
+    address: "520 Balestier Road, Singapore",
+    phone: "+6562528066",
+    website: null,
+    lat: 1.3278,
+    lng: 103.8480,
+    distance: 0,
+    emergency: true,
+  },
+  {
+    id: "sg-er-2",
+    name: "Veterinary Emergency Service (VES)",
+    address: "59 Sungei Tengah Road, Blk 5, Singapore",
+    phone: "+6567660993",
+    website: null,
+    lat: 1.3684,
+    lng: 103.7198,
+    distance: 0,
+    emergency: true,
+  },
+  {
+    id: "sg-er-3",
+    name: "Companion Animal Surgery & Emergency Centre",
+    address: "6 Jalan Lembah Kallang, Singapore",
+    phone: "+6565060016",
+    website: null,
+    lat: 1.3118,
+    lng: 103.8688,
+    distance: 0,
+    emergency: true,
+  },
+];
+
+function isInSingapore(lat: number, lng: number): boolean {
+  return lat >= 1.15 && lat <= 1.47 && lng >= 103.6 && lng <= 104.1;
+}
 
 interface EmergencyVetSheetProps {
   visible: boolean;
@@ -45,10 +86,34 @@ export function EmergencyVetSheet({
     const lng = userLng ?? -122.4194;
 
     try {
-      const results = await fetchNearbyVets(lat, lng, 15000);
+      let results = await fetchNearbyVets(lat, lng, 15000);
+
+      if (isInSingapore(lat, lng)) {
+        const existingIds = new Set(results.map((v) => v.id));
+        const fallbacks = SINGAPORE_ER_VETS
+          .filter((v) => !existingIds.has(v.id))
+          .map((v) => ({
+            ...v,
+            distance: Math.round(haversineDistance(lat, lng, v.lat, v.lng)),
+          }));
+        results = [...results, ...fallbacks];
+        results.sort((a, b) => a.distance - b.distance);
+      }
+
       setVets(results);
     } catch {
-      setVets([]);
+      if (isInSingapore(lat, lng)) {
+        const fallbacks = SINGAPORE_ER_VETS.map((v) => ({
+          ...v,
+          distance: Math.round(
+            haversineDistance(lat, lng, v.lat, v.lng),
+          ),
+        }));
+        fallbacks.sort((a, b) => a.distance - b.distance);
+        setVets(fallbacks);
+      } else {
+        setVets([]);
+      }
     }
 
     setLoading(false);
@@ -102,13 +167,17 @@ export function EmergencyVetSheet({
         </Text>
       </View>
       <View style={styles.vetActions}>
-        {item.phone && (
+        {item.phone ? (
           <Pressable
             style={[styles.vetActionBtn, styles.callBtn]}
             onPress={() => handleCall(item.phone!)}
           >
             <Ionicons name="call" size={16} color={Colors.success} />
           </Pressable>
+        ) : (
+          <View style={[styles.vetActionBtn, styles.callBtnDisabled]}>
+            <Ionicons name="call" size={16} color={Colors.textTertiary} />
+          </View>
         )}
         <Pressable
           style={[styles.vetActionBtn, styles.navBtn]}
@@ -316,6 +385,10 @@ const styles = StyleSheet.create({
   },
   callBtn: {
     backgroundColor: "#E8F8F0",
+  },
+  callBtnDisabled: {
+    backgroundColor: Colors.surfaceSecondary,
+    opacity: 0.5,
   },
   navBtn: {
     backgroundColor: Colors.primaryLight,

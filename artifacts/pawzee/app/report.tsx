@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -29,8 +29,6 @@ export default function ReportScreen() {
   const [step, setStep] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState<HazardCategory | null>(null);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [location, setLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
-  const [fetchingLocation, setFetchingLocation] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const handleCategorySelect = (category: HazardCategory) => {
@@ -66,48 +64,15 @@ export default function ReportScreen() {
     }
   };
 
-  const handleFetchLocation = async () => {
-    setFetchingLocation(true);
+  const handleSubmit = async () => {
+    if (!selectedCategory) return;
+    setSubmitting(true);
+
     try {
       const loc = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High,
       });
-      let address = `${loc.coords.latitude.toFixed(5)}, ${loc.coords.longitude.toFixed(5)}`;
-      try {
-        const reverseResults = await Location.reverseGeocodeAsync({
-          latitude: loc.coords.latitude,
-          longitude: loc.coords.longitude,
-        });
-        if (reverseResults.length > 0) {
-          const r = reverseResults[0];
-          const parts = [r.street, r.city, r.region].filter(Boolean);
-          if (parts.length > 0) address = parts.join(", ");
-        }
-      } catch {}
 
-      setLocation({
-        lat: loc.coords.latitude,
-        lng: loc.coords.longitude,
-        address,
-      });
-    } catch {
-      Alert.alert("Location Error", "Could not get your current location. Please try again.");
-    } finally {
-      setFetchingLocation(false);
-    }
-  };
-
-  useEffect(() => {
-    if (step === 3 && !location) {
-      handleFetchLocation();
-    }
-  }, [step]);
-
-  const handleSubmit = async () => {
-    if (!selectedCategory || !location) return;
-    setSubmitting(true);
-
-    try {
       let uploadedPhotoUrl: string | null = null;
       if (photoUri) {
         try {
@@ -119,8 +84,8 @@ export default function ReportScreen() {
 
       await createHazard({
         category: selectedCategory,
-        lat: location.lat,
-        lng: location.lng,
+        lat: loc.coords.latitude,
+        lng: loc.coords.longitude,
         photoUrl: uploadedPhotoUrl,
       });
 
@@ -158,7 +123,7 @@ export default function ReportScreen() {
       </View>
 
       <View style={styles.steps}>
-        {[1, 2, 3, 4].map((s) => (
+        {[1, 2, 3].map((s) => (
           <View
             key={s}
             style={[
@@ -244,62 +209,11 @@ export default function ReportScreen() {
         </View>
       )}
 
-      {step === 3 && (
-        <View style={styles.stepContent}>
-          <Text style={styles.stepTitle}>Confirm location</Text>
-          <Text style={styles.stepSubtitle}>
-            We'll pin this hazard at your current GPS position
-          </Text>
-
-          <View style={styles.locationCard}>
-            <View style={styles.locationIconWrap}>
-              <Ionicons name="location" size={28} color={Colors.primary} />
-            </View>
-
-            {fetchingLocation ? (
-              <View style={styles.locationLoading}>
-                <ActivityIndicator size="small" color={Colors.primary} />
-                <Text style={styles.locationLoadingText}>Getting your location...</Text>
-              </View>
-            ) : location ? (
-              <View style={styles.locationDetails}>
-                <Text style={styles.locationAddress}>{location.address}</Text>
-                <Text style={styles.locationCoords}>
-                  {location.lat.toFixed(5)}, {location.lng.toFixed(5)}
-                </Text>
-              </View>
-            ) : (
-              <Text style={styles.locationError}>Could not determine location</Text>
-            )}
-          </View>
-
-          {location && (
-            <Pressable style={styles.refreshLocationBtn} onPress={handleFetchLocation}>
-              <Ionicons name="refresh" size={18} color={Colors.primary} />
-              <Text style={styles.refreshLocationText}>Refresh location</Text>
-            </Pressable>
-          )}
-
-          <View style={styles.navButtons}>
-            <Pressable
-              style={[styles.nextBtn, !location && styles.nextBtnDisabled]}
-              onPress={() => {
-                if (location) setStep(4);
-              }}
-              disabled={!location}
-            >
-              <Text style={styles.nextBtnText}>Looks good</Text>
-              <Ionicons name="arrow-forward" size={18} color="#FFF" />
-            </Pressable>
-          </View>
-        </View>
-      )}
-
-      {step === 4 && config && location && (
+      {step === 3 && config && (
         <View style={styles.stepContent}>
           <Text style={styles.stepTitle}>Review & submit</Text>
           <Text style={styles.stepSubtitle}>
-            Confirm everything looks correct before submitting
+            Your current GPS location will be used as the hazard pin
           </Text>
 
           <View style={styles.confirmCard}>
@@ -318,7 +232,7 @@ export default function ReportScreen() {
               <View style={styles.confirmInfoRow}>
                 <Ionicons name="location" size={16} color={Colors.textSecondary} />
                 <Text style={styles.confirmInfoText} numberOfLines={1}>
-                  {location.address}
+                  Current GPS location
                 </Text>
               </View>
               <View style={styles.confirmInfoRow}>
@@ -517,88 +431,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "Inter_600SemiBold",
     color: Colors.primary,
-  },
-  locationCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: 20,
-    gap: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  locationIconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: Colors.primaryLight,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  locationLoading: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  locationLoadingText: {
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
-    color: Colors.textSecondary,
-  },
-  locationDetails: {
-    flex: 1,
-    gap: 4,
-  },
-  locationAddress: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.text,
-  },
-  locationCoords: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textTertiary,
-  },
-  locationError: {
-    flex: 1,
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
-    color: Colors.danger,
-  },
-  refreshLocationBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    marginTop: 12,
-    paddingVertical: 8,
-  },
-  refreshLocationText: {
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
-    color: Colors.primary,
-  },
-  nextBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    backgroundColor: Colors.primary,
-  },
-  nextBtnDisabled: {
-    opacity: 0.5,
-  },
-  nextBtnText: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-    color: "#FFF",
   },
   confirmCard: {
     backgroundColor: Colors.surface,

@@ -111,3 +111,9 @@ Utility scripts package. Run via `pnpm --filter @workspace/scripts run <script>`
 - **Auth flow**: Mobile uses PKCE via expo-auth-session → POST /api/mobile-auth/token-exchange → Bearer token in expo-secure-store
 - **Color palette**: primary teal `#1A9E8F`, accent coral `#FF6B5B`, background `#FAFBFC`
 - **Hazard categories**: broken_glass, poison_bait, aggressive_dog, construction, spray_activity, ticks_fleas, stray_animal, flooding, ant_nest, waste, other
+- **Search bar**: Waze-style fullscreen overlay with geocode autocomplete; passes lat/lng directly (no re-geocoding)
+- **Report flow**: 3 steps (category → photo → review/submit); GPS captured on submit
+- **Hazard confirm**: Prompts for optional photo before confirming; photo stored in hazard_confirmations table
+- **Vet sheet**: Singapore 24/7 ER vet fallback numbers always shown when in SG area
+- **Hazard radius**: 3km (fetchHazards and fetchHazardSummary)
+- **Icon fixes**: ticks_fleas uses yellow (#CA8A04), ant_nest uses "bug-outline" (valid MCIcon)

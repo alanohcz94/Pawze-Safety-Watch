@@ -31,7 +31,7 @@ import type { HazardItem, HazardSummary } from "@/lib/api";
 import { haversineDistance } from "@/lib/hazards";
 import { HazardMarker, ClusterMarker } from "@/components/HazardMarker";
 import { HazardDetailSheet } from "@/components/HazardDetailSheet";
-import { SearchBar } from "@/components/SearchBar";
+import { SearchBar, type SearchResult } from "@/components/SearchBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { EmergencyVetSheet } from "@/components/EmergencyVetSheet";
 import { SafetySummaryOverlay } from "@/components/SafetySummary";
@@ -125,7 +125,7 @@ export default function MapScreen() {
 
   const { data: hazards = [], refetch: refetchHazards } = useQuery({
     queryKey: ["hazards", centerLat, centerLng],
-    queryFn: () => fetchHazards(centerLat, centerLng, 5000),
+    queryFn: () => fetchHazards(centerLat, centerLng, 3000),
     refetchInterval: 30000,
   });
 
@@ -185,27 +185,22 @@ export default function MapScreen() {
     mapRef.current?.animateToRegion(newRegion, 400);
   };
 
-  const handleSearch = async (query: string) => {
+  const handleSearch = async (result: SearchResult) => {
     try {
-      const results = await Location.geocodeAsync(query);
-      if (results.length > 0) {
-        const { latitude, longitude } = results[0];
-        const newRegion: Region = {
-          latitude,
-          longitude,
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
-        };
-        mapRef.current?.animateToRegion(newRegion, 600);
-        setSearchLocation(query);
-        setQueryCenter({ lat: latitude, lng: longitude });
+      const { latitude, longitude, label } = result;
+      const newRegion: Region = {
+        latitude,
+        longitude,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
+      };
+      mapRef.current?.animateToRegion(newRegion, 600);
+      setSearchLocation(label);
+      setQueryCenter({ lat: latitude, lng: longitude });
 
-        const summaryData = await fetchHazardSummary(latitude, longitude, 5000);
-        setSummary(summaryData);
-        setShowSummary(true);
-      } else {
-        Alert.alert("Not Found", "Could not find that location.");
-      }
+      const summaryData = await fetchHazardSummary(latitude, longitude, 3000);
+      setSummary(summaryData);
+      setShowSummary(true);
     } catch {
       Alert.alert("Search Error", "Failed to search for location.");
     }

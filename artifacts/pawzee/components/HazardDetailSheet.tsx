@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { HazardIcon } from "./HazardIcon";
@@ -24,7 +25,7 @@ import {
   type HazardCategory,
 } from "@/lib/hazards";
 import type { HazardItem } from "@/lib/api";
-import { confirmHazard } from "@/lib/api";
+import { confirmHazard, uploadPhoto } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 interface HazardDetailSheetProps {
@@ -47,6 +48,7 @@ export function HazardDetailSheet({
   const { isAuthenticated, login } = useAuth();
   const [confirming, setConfirming] = useState(false);
   const [photoVisible, setPhotoVisible] = useState(false);
+  const [showPhotoPrompt, setShowPhotoPrompt] = useState(false);
 
   if (!hazard) return null;
 
@@ -58,7 +60,7 @@ export function HazardDetailSheet({
 
   const canConfirm = distance != null && distance <= 10;
 
-  const handleConfirm = async () => {
+  const handleConfirmPress = () => {
     if (!isAuthenticated) {
       Alert.alert("Login Required", "Please log in to confirm hazards.", [
         { text: "Cancel" },
@@ -66,10 +68,14 @@ export function HazardDetailSheet({
       ]);
       return;
     }
+    setShowPhotoPrompt(true);
+  };
+
+  const doConfirm = async (photoUrl?: string) => {
     if (userLat == null || userLng == null) return;
     setConfirming(true);
     try {
-      await confirmHazard(hazard.id, userLat, userLng);
+      await confirmHazard(hazard.id, userLat, userLng, photoUrl);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onConfirmed();
       onClose();
@@ -77,7 +83,50 @@ export function HazardDetailSheet({
       Alert.alert("Cannot Confirm", err.message || "Failed to confirm hazard");
     } finally {
       setConfirming(false);
+      setShowPhotoPrompt(false);
     }
+  };
+
+  const handleConfirmWithPhoto = async (useCamera: boolean) => {
+    try {
+      let result: ImagePicker.ImagePickerResult;
+      if (useCamera) {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert("Permission Required", "Camera permission is needed to take photos.");
+          return;
+        }
+        result = await ImagePicker.launchCameraAsync({
+          quality: 0.7,
+          allowsEditing: true,
+          aspect: [4, 3],
+        });
+      } else {
+        result = await ImagePicker.launchImageLibraryAsync({
+          quality: 0.7,
+          allowsEditing: true,
+          aspect: [4, 3],
+        });
+      }
+
+      if (!result.canceled && result.assets[0]) {
+        setShowPhotoPrompt(false);
+        setConfirming(true);
+        try {
+          const url = await uploadPhoto(result.assets[0].uri);
+          await doConfirm(url);
+        } catch {
+          await doConfirm();
+        }
+      }
+    } catch {
+      await doConfirm();
+    }
+  };
+
+  const handleConfirmSkipPhoto = () => {
+    setShowPhotoPrompt(false);
+    doConfirm();
   };
 
   const handleNavigate = () => {
@@ -169,7 +218,7 @@ export function HazardDetailSheet({
             {canConfirm && (
               <Pressable
                 style={[styles.confirmBtn, confirming && styles.confirmBtnDisabled]}
-                onPress={handleConfirm}
+                onPress={handleConfirmPress}
                 disabled={confirming}
               >
                 {confirming ? (
@@ -204,6 +253,47 @@ export function HazardDetailSheet({
               contentFit="contain"
             />
           )}
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showPhotoPrompt}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setShowPhotoPrompt(false)}
+      >
+        <View style={styles.promptOverlay}>
+          <View style={styles.promptSheet}>
+            <Text style={styles.promptTitle}>Add a confirmation photo?</Text>
+            <Text style={styles.promptSubtitle}>
+              Optionally take a photo to help verify this hazard
+            </Text>
+
+            <View style={styles.promptActions}>
+              <Pressable
+                style={styles.promptActionBtn}
+                onPress={() => handleConfirmWithPhoto(true)}
+              >
+                <View style={[styles.promptActionIcon, { backgroundColor: Colors.primaryLight }]}>
+                  <Ionicons name="camera" size={24} color={Colors.primary} />
+                </View>
+                <Text style={styles.promptActionLabel}>Camera</Text>
+              </Pressable>
+              <Pressable
+                style={styles.promptActionBtn}
+                onPress={() => handleConfirmWithPhoto(false)}
+              >
+                <View style={[styles.promptActionIcon, { backgroundColor: Colors.primaryLight }]}>
+                  <Ionicons name="images" size={24} color={Colors.primary} />
+                </View>
+                <Text style={styles.promptActionLabel}>Gallery</Text>
+              </Pressable>
+            </View>
+
+            <Pressable style={styles.skipPhotoBtn} onPress={handleConfirmSkipPhoto}>
+              <Text style={styles.skipPhotoText}>Skip — confirm without photo</Text>
+            </Pressable>
+          </View>
         </View>
       </Modal>
     </>
@@ -350,5 +440,64 @@ const styles = StyleSheet.create({
   fullPhoto: {
     width: "100%",
     height: "80%",
+  },
+  promptOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: Colors.overlay,
+    paddingHorizontal: 24,
+  },
+  promptSheet: {
+    backgroundColor: Colors.surface,
+    borderRadius: 20,
+    padding: 24,
+    width: "100%",
+    maxWidth: 340,
+    alignItems: "center",
+  },
+  promptTitle: {
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+    color: Colors.text,
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  promptSubtitle: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: Colors.textSecondary,
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  promptActions: {
+    flexDirection: "row",
+    gap: 20,
+    marginBottom: 16,
+  },
+  promptActionBtn: {
+    alignItems: "center",
+    gap: 8,
+  },
+  promptActionIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  promptActionLabel: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: Colors.text,
+  },
+  skipPhotoBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+  },
+  skipPhotoText: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    color: Colors.textSecondary,
   },
 });

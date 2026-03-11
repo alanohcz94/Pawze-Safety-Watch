@@ -161,7 +161,7 @@ router.post("/hazards/:id/confirm", async (req: Request, res: Response) => {
     return;
   }
 
-  const { lat, lng } = req.body as ConfirmHazardRequest;
+  const { lat, lng, photoUrl } = req.body as ConfirmHazardRequest;
   if (typeof lat !== "number" || typeof lng !== "number") {
     res.status(400).json({ error: "Invalid request body: lat and lng required" });
     return;
@@ -208,6 +208,7 @@ router.post("/hazards/:id/confirm", async (req: Request, res: Response) => {
   await db.insert(hazardConfirmationsTable).values({
     hazardId,
     userId: req.user.id,
+    photoUrl: typeof photoUrl === "string" ? photoUrl : null,
   });
 
   const [updated] = await db

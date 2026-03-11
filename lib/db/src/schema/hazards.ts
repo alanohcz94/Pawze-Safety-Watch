@@ -19,6 +19,7 @@ export const hazardConfirmationsTable = pgTable("hazard_confirmations", {
   hazardId: varchar("hazard_id").notNull().references(() => hazardsTable.id),
   userId: varchar("user_id").notNull().references(() => usersTable.id),
   confirmedAt: timestamp("confirmed_at", { withTimezone: true }).notNull().defaultNow(),
+  photoUrl: varchar("photo_url"),
 });
 
 export type Hazard = typeof hazardsTable.$inferSelect;

@@ -61,8 +61,8 @@ export const HAZARD_CONFIGS: Record<HazardCategory, HazardIconConfig> = {
     label: "Ticks / Fleas",
     iconFamily: "MaterialCommunityIcons",
     iconName: "bug",
-    color: "#65A30D",
-    bgColor: "#ECFCCB",
+    color: "#CA8A04",
+    bgColor: "#FEF9C3",
   },
   stray_animal: {
     label: "Stray Animal",
@@ -81,7 +81,7 @@ export const HAZARD_CONFIGS: Record<HazardCategory, HazardIconConfig> = {
   ant_nest: {
     label: "Ant Nest",
     iconFamily: "MaterialCommunityIcons",
-    iconName: "ant",
+    iconName: "bug-outline",
     color: "#92400E",
     bgColor: "#FDE68A",
   },

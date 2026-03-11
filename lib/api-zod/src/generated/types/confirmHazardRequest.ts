@@ -9,4 +9,5 @@
 export interface ConfirmHazardRequest {
   lat: number;
   lng: number;
+  photoUrl?: string | null;
 }
