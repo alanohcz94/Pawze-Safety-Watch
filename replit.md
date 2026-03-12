@@ -109,6 +109,9 @@ Utility scripts package. Run via `pnpm --filter @workspace/scripts run <script>`
 - **react-native-maps pinned to 1.18.0** — only Expo Go-compatible version; do NOT add to app.json plugins
 - **No tab bar** — single full-screen map layout
 - **Auth flow**: Mobile uses PKCE via expo-auth-session → POST /api/mobile-auth/token-exchange → Bearer token in expo-secure-store
+- **Guest mode**: POST /api/guest/session creates anonymous user (id: `guest-{uuid}`, firstName: "Guest") and returns session token; frontend stores `auth_is_guest` flag in SecureStore; guest users can report + confirm hazards; guests see "Sign In with Replit" upgrade option in profile menu
+- **HazardDetailSheet**: Uses single Modal with internal view state machine (`"sheet" | "photo" | "confirmPrompt"`) — never nest Modals in React Native
+- **Navigation URLs**: Always use Google Maps (`https://www.google.com/maps/dir/...`) on all platforms, never Apple Maps
 - **Color palette**: primary teal `#1A9E8F`, accent coral `#FF6B5B`, background `#FAFBFC`
 - **Hazard categories**: broken_glass, poison_bait, aggressive_dog, construction, spray_activity, ticks_fleas, stray_animal, flooding, ant_nest, waste, other
 - **Search bar**: Waze-style fullscreen overlay with geocode autocomplete; passes lat/lng directly (no re-geocoding)

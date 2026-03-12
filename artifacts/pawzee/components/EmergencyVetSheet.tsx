@@ -7,7 +7,6 @@ import {
   Modal,
   FlatList,
   Linking,
-  Platform,
   ActivityIndicator,
   Alert,
 } from "react-native";
@@ -127,22 +126,14 @@ export function EmergencyVetSheet({
   };
 
   const handleNavigate = (vet: VetClinic) => {
-    const url = Platform.select({
-      ios: `maps:?daddr=${vet.lat},${vet.lng}`,
-      android: `google.navigation:q=${vet.lat},${vet.lng}`,
-      default: `https://www.google.com/maps/dir/?api=1&destination=${vet.lat},${vet.lng}`,
-    });
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${vet.lat},${vet.lng}`;
     Linking.openURL(url);
   };
 
   const handleSearchMaps = () => {
     const lat = userLat ?? 37.7749;
     const lng = userLng ?? -122.4194;
-    const url = Platform.select({
-      ios: `maps:?q=emergency+vet&near=${lat},${lng}`,
-      android: `geo:${lat},${lng}?q=emergency+vet`,
-      default: `https://www.google.com/maps/search/emergency+vet/@${lat},${lng},14z`,
-    });
+    const url = `https://www.google.com/maps/search/emergency+vet/@${lat},${lng},14z`;
     Linking.openURL(url);
   };
 

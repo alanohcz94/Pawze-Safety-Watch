@@ -17,10 +17,25 @@ interface ProfileMenuProps {
 }
 
 export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
-  const { user, isAuthenticated, login, logout } = useAuth();
+  const { user, isAuthenticated, isGuest, login, loginAsGuest, logout } = useAuth();
 
   const handleLogout = async () => {
     await logout();
+    onClose();
+  };
+
+  const handleLogin = () => {
+    login();
+    onClose();
+  };
+
+  const handleGuest = () => {
+    loginAsGuest();
+    onClose();
+  };
+
+  const handleUpgradeToReplit = () => {
+    login();
     onClose();
   };
 
@@ -32,40 +47,63 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
           {isAuthenticated && user ? (
             <>
               <View style={styles.profileSection}>
-                {user.profileImageUrl ? (
+                {!isGuest && user.profileImageUrl ? (
                   <Image
                     source={{ uri: user.profileImageUrl }}
                     style={styles.avatar}
                   />
                 ) : (
                   <View style={styles.avatarPlaceholder}>
-                    <Ionicons name="person" size={24} color={Colors.textTertiary} />
+                    <Ionicons
+                      name={isGuest ? "person-outline" : "person"}
+                      size={24}
+                      color={Colors.textTertiary}
+                    />
                   </View>
                 )}
                 <View style={styles.profileInfo}>
                   <Text style={styles.name}>
-                    {user.firstName || "User"} {user.lastName || ""}
+                    {isGuest ? "Guest User" : `${user.firstName || "User"} ${user.lastName || ""}`}
                   </Text>
-                  {user.email && (
+                  {!isGuest && user.email && (
                     <Text style={styles.email}>{user.email}</Text>
+                  )}
+                  {isGuest && (
+                    <Text style={styles.guestLabel}>Browsing as guest</Text>
                   )}
                 </View>
               </View>
 
               <View style={styles.divider} />
 
+              {isGuest && (
+                <Pressable style={styles.menuItem} onPress={handleUpgradeToReplit}>
+                  <Feather name="log-in" size={20} color={Colors.primary} />
+                  <Text style={[styles.menuItemText, { color: Colors.primary }]}>
+                    Sign In with Replit
+                  </Text>
+                </Pressable>
+              )}
+
               <Pressable style={styles.menuItem} onPress={handleLogout}>
                 <Feather name="log-out" size={20} color={Colors.danger} />
                 <Text style={[styles.menuItemText, { color: Colors.danger }]}>
-                  Log Out
+                  {isGuest ? "Sign Out" : "Log Out"}
                 </Text>
               </Pressable>
             </>
           ) : (
-            <Pressable style={styles.loginBtn} onPress={() => { login(); onClose(); }}>
-              <Feather name="log-in" size={20} color="#FFF" />
-              <Text style={styles.loginBtnText}>Log In</Text>
-            </Pressable>
+            <View style={styles.authActions}>
+              <Pressable style={styles.loginBtn} onPress={handleLogin}>
+                <Feather name="log-in" size={20} color="#FFF" />
+                <Text style={styles.loginBtnText}>Log In with Replit</Text>
+              </Pressable>
+
+              <Pressable style={styles.guestBtn} onPress={handleGuest}>
+                <Ionicons name="person-outline" size={20} color={Colors.primary} />
+                <Text style={styles.guestBtnText}>Continue as Guest</Text>
+              </Pressable>
+            </View>
           )}
         </View>
       </View>
@@ -127,6 +165,12 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 2,
   },
+  guestLabel: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: Colors.textTertiary,
+    marginTop: 2,
+  },
   divider: {
     height: 1,
     backgroundColor: Colors.borderLight,
@@ -143,6 +187,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "Inter_500Medium",
   },
+  authActions: {
+    gap: 10,
+  },
   loginBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -156,5 +203,21 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "Inter_600SemiBold",
     color: "#FFF",
+  },
+  guestBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: Colors.primaryLight,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+  },
+  guestBtnText: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.primary,
   },
 });

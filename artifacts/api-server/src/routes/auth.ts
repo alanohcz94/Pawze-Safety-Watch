@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import * as oidc from "openid-client";
 import { Router, type IRouter, type Request, type Response } from "express";
 import type {
@@ -258,6 +259,40 @@ router.post(
     }
   },
 );
+
+router.post("/guest/session", async (req: Request, res: Response) => {
+  try {
+    const guestId = `guest-${crypto.randomUUID()}`;
+
+    const [guestUser] = await db
+      .insert(usersTable)
+      .values({
+        id: guestId,
+        email: null,
+        firstName: "Guest",
+        lastName: null,
+        profileImageUrl: null,
+      })
+      .returning();
+
+    const sessionData: SessionData = {
+      user: {
+        id: guestUser.id,
+        email: guestUser.email,
+        firstName: guestUser.firstName,
+        lastName: guestUser.lastName,
+        profileImageUrl: guestUser.profileImageUrl,
+      },
+      access_token: "guest",
+    };
+
+    const sid = await createSession(sessionData);
+    res.json({ token: sid });
+  } catch (err) {
+    console.error("Guest session error:", err);
+    res.status(500).json({ error: "Failed to create guest session" });
+  }
+});
 
 router.post("/mobile-auth/logout", async (req: Request, res: Response) => {
   const sid = getSessionId(req);

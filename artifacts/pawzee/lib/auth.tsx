@@ -6,6 +6,7 @@ import * as SecureStore from "expo-secure-store";
 WebBrowser.maybeCompleteAuthSession();
 
 const AUTH_TOKEN_KEY = "auth_session_token";
+const IS_GUEST_KEY = "auth_is_guest";
 const ISSUER_URL = process.env.EXPO_PUBLIC_ISSUER_URL ?? "https://replit.com/oidc";
 
 interface User {
@@ -20,7 +21,9 @@ interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isGuest: boolean;
   login: () => Promise<void>;
+  loginAsGuest: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -28,7 +31,9 @@ const AuthContext = createContext<AuthContextValue>({
   user: null,
   isLoading: true,
   isAuthenticated: false,
+  isGuest: false,
   login: async () => {},
+  loginAsGuest: async () => {},
   logout: async () => {},
 });
 
@@ -46,6 +51,7 @@ function getClientId(): string {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isGuest, setIsGuest] = useState(false);
 
   const discovery = AuthSession.useAutoDiscovery(ISSUER_URL);
 
@@ -66,9 +72,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
       if (!token) {
         setUser(null);
+        setIsGuest(false);
         setIsLoading(false);
         return;
       }
+
+      const guestFlag = await SecureStore.getItemAsync(IS_GUEST_KEY);
 
       const apiBase = getApiBaseUrl();
       const res = await fetch(`${apiBase}/api/auth/user`, {
@@ -78,12 +87,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.user) {
         setUser(data.user);
+        setIsGuest(guestFlag === "true");
       } else {
         await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
+        await SecureStore.deleteItemAsync(IS_GUEST_KEY);
         setUser(null);
+        setIsGuest(false);
       }
     } catch {
       setUser(null);
+      setIsGuest(false);
     } finally {
       setIsLoading(false);
     }
@@ -127,6 +140,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await exchangeRes.json();
         if (data.token) {
           await SecureStore.setItemAsync(AUTH_TOKEN_KEY, data.token);
+          await SecureStore.deleteItemAsync(IS_GUEST_KEY);
+          setIsGuest(false);
           setIsLoading(true);
           await fetchUser();
         }
@@ -145,6 +160,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [promptAsync]);
 
+  const loginAsGuest = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const apiBase = getApiBaseUrl();
+      const res = await fetch(`${apiBase}/api/guest/session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!res.ok) {
+        console.error("Guest session failed:", res.status);
+        setIsLoading(false);
+        return;
+      }
+
+      const data = await res.json();
+      if (data.token) {
+        await SecureStore.setItemAsync(AUTH_TOKEN_KEY, data.token);
+        await SecureStore.setItemAsync(IS_GUEST_KEY, "true");
+        setIsGuest(true);
+        await fetchUser();
+      }
+    } catch (err) {
+      console.error("Guest login error:", err);
+      setIsLoading(false);
+    }
+  }, [fetchUser]);
+
   const logout = useCallback(async () => {
     try {
       const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
@@ -158,7 +201,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
     } finally {
       await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
+      await SecureStore.deleteItemAsync(IS_GUEST_KEY);
       setUser(null);
+      setIsGuest(false);
     }
   }, []);
 
@@ -168,7 +213,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isLoading,
         isAuthenticated: !!user,
+        isGuest,
         login,
+        loginAsGuest,
         logout,
       }}
     >
