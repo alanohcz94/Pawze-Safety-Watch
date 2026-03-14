@@ -1,4 +1,4 @@
-import { fetchNearbyVets, type VetClinic } from "@/lib/api";
+import { type VetClinic } from "@/lib/api";
 
 const SINGAPORE_ER_VETS: VetClinic[] = [
   {

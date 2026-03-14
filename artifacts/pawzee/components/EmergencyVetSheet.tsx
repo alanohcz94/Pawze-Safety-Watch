@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   Pressable,
   Modal,
   FlatList,
@@ -17,8 +16,19 @@ import { haversineDistance } from "@/lib/hazards";
 import { SINGAPORE_ER_VETS } from "@/constants/constantVariable";
 import { styles } from "./componentStyleSheet/StyleSheetEmergencyVetSheet";
 
+const VET_SEARCH_RADIUS_METERS = 8_000;
+
 function isInSingapore(lat: number, lng: number): boolean {
   return lat >= 1.15 && lat <= 1.47 && lng >= 103.6 && lng <= 104.1;
+}
+
+function getSingaporeEmergencyFallbacks(lat: number, lng: number): VetClinic[] {
+  return SINGAPORE_ER_VETS.map((vet) => ({
+    ...vet,
+    distance: Math.round(haversineDistance(lat, lng, vet.lat, vet.lng)),
+  }))
+    .filter((vet) => vet.distance <= VET_SEARCH_RADIUS_METERS)
+    .sort((a, b) => a.distance - b.distance);
 }
 
 interface EmergencyVetSheetProps {
@@ -52,16 +62,13 @@ export function EmergencyVetSheet({
     const lng = userLng ?? -122.4194;
 
     try {
-      let results = await fetchNearbyVets(lat, lng, 15000);
+      let results = await fetchNearbyVets(lat, lng, VET_SEARCH_RADIUS_METERS);
 
       if (isInSingapore(lat, lng)) {
         const existingIds = new Set(results.map((v) => v.id));
-        const fallbacks = SINGAPORE_ER_VETS.filter(
+        const fallbacks = getSingaporeEmergencyFallbacks(lat, lng).filter(
           (v) => !existingIds.has(v.id),
-        ).map((v) => ({
-          ...v,
-          distance: Math.round(haversineDistance(lat, lng, v.lat, v.lng)),
-        }));
+        );
         results = [...results, ...fallbacks];
         results.sort((a, b) => a.distance - b.distance);
       }
@@ -69,12 +76,7 @@ export function EmergencyVetSheet({
       setVets(results);
     } catch {
       if (isInSingapore(lat, lng)) {
-        const fallbacks = SINGAPORE_ER_VETS.map((v) => ({
-          ...v,
-          distance: Math.round(haversineDistance(lat, lng, v.lat, v.lng)),
-        }));
-        fallbacks.sort((a, b) => a.distance - b.distance);
-        setVets(fallbacks);
+        setVets(getSingaporeEmergencyFallbacks(lat, lng));
       } else {
         setVets([]);
       }
