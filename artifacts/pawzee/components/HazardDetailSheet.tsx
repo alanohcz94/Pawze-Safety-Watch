@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Image } from "expo-image";
-import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
@@ -23,11 +23,11 @@ import {
   type HazardCategory,
 } from "@/lib/hazards";
 import type { HazardItem } from "@/lib/api";
-import { confirmHazard, uploadPhoto } from "@/lib/api";
+import { confirmHazard, updateHazardPhoto, uploadPhoto } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { styles } from "./componentStyleSheet/StyleSheetHazardDetailSheet";
 
-type SheetView = "sheet" | "photo" | "confirmPrompt";
+type SheetView = "sheet" | "photo";
 
 interface HazardDetailSheetProps {
   hazard: HazardItem | null;
@@ -36,6 +36,7 @@ interface HazardDetailSheetProps {
   userLat: number | null;
   userLng: number | null;
   onConfirmed: () => void;
+  onHazardUpdated: (hazard: HazardItem) => void;
 }
 
 export function HazardDetailSheet({
@@ -45,29 +46,34 @@ export function HazardDetailSheet({
   userLat,
   userLng,
   onConfirmed,
+  onHazardUpdated,
 }: HazardDetailSheetProps) {
   const { isAuthenticated, login } = useAuth();
   const [confirming, setConfirming] = useState(false);
+  const [updatingPhoto, setUpdatingPhoto] = useState(false);
   const [currentView, setCurrentView] = useState<SheetView>("sheet");
 
   useEffect(() => {
     if (visible) {
       setCurrentView("sheet");
       setConfirming(false);
+      setUpdatingPhoto(false);
     }
   }, [visible]);
 
   if (!hazard) return null;
 
-  const config = HAZARD_CONFIGS[hazard.category as HazardCategory] || HAZARD_CONFIGS.other;
+  const config =
+    HAZARD_CONFIGS[hazard.category as HazardCategory] || HAZARD_CONFIGS.other;
   const distance =
     userLat != null && userLng != null
       ? haversineDistance(userLat, userLng, hazard.lat, hazard.lng)
       : null;
 
   const canConfirm = distance != null && distance <= 10;
+  const alreadyConfirmed = hazard.userHasConfirmed;
 
-  const handleConfirmPress = () => {
+  const handleConfirmPress = async () => {
     if (!isAuthenticated) {
       Alert.alert("Login Required", "Please log in to confirm hazards.", [
         { text: "Cancel" },
@@ -75,18 +81,30 @@ export function HazardDetailSheet({
       ]);
       return;
     }
-    setCurrentView("confirmPrompt");
-  };
 
-  const doConfirm = async (photoUrl?: string) => {
-    if (userLat == null || userLng == null) return;
+    if (alreadyConfirmed) {
+      return;
+    }
+
+    if (userLat == null || userLng == null) {
+      Alert.alert(
+        "Location Required",
+        "Your current location is needed to confirm this hazard.",
+      );
+      return;
+    }
+
     setConfirming(true);
-    setCurrentView("sheet");
     try {
-      await confirmHazard(hazard.id, userLat, userLng, photoUrl);
+      const updated = await confirmHazard(hazard.id, userLat, userLng);
+      const nextHazard = {
+        ...hazard,
+        ...updated,
+      };
+      onHazardUpdated(nextHazard);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert("Hazard Confirmed", "This hazard has been confirmed.");
       onConfirmed();
-      onClose();
     } catch (err: any) {
       Alert.alert("Cannot Confirm", err.message || "Failed to confirm hazard");
     } finally {
@@ -94,45 +112,46 @@ export function HazardDetailSheet({
     }
   };
 
-  const handleConfirmWithPhoto = async (useCamera: boolean) => {
-    try {
-      let result: ImagePicker.ImagePickerResult;
-      if (useCamera) {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== "granted") {
-          Alert.alert("Permission Required", "Camera permission is needed to take photos.");
-          return;
-        }
-        result = await ImagePicker.launchCameraAsync({
-          quality: 0.7,
-          allowsEditing: true,
-          aspect: [4, 3],
-        });
-      } else {
-        result = await ImagePicker.launchImageLibraryAsync({
-          quality: 0.7,
-          allowsEditing: true,
-          aspect: [4, 3],
-        });
-      }
-
-      if (!result.canceled && result.assets[0]) {
-        setCurrentView("sheet");
-        setConfirming(true);
-        try {
-          const url = await uploadPhoto(result.assets[0].uri);
-          await doConfirm(url);
-        } catch {
-          await doConfirm();
-        }
-      }
-    } catch {
-      await doConfirm();
+  const handleEditPhoto = async () => {
+    if (!alreadyConfirmed) {
+      return;
     }
-  };
 
-  const handleConfirmSkipPhoto = () => {
-    doConfirm();
+    const result = await ImagePicker.launchImageLibraryAsync({
+      quality: 0.7,
+      allowsEditing: true,
+      aspect: [4, 3],
+    });
+
+    if (result.canceled || !result.assets[0]) {
+      return;
+    }
+
+    setUpdatingPhoto(true);
+    try {
+      const photoUrl = await uploadPhoto(result.assets[0].uri);
+      const updated = await updateHazardPhoto(hazard.id, photoUrl);
+      const nextHazard = {
+        ...hazard,
+        ...updated,
+      };
+      onHazardUpdated(nextHazard);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert(
+        hazard.photoUrl ? "Photo Updated" : "Photo Added",
+        hazard.photoUrl
+          ? "The hazard photo has been updated."
+          : "A photo has been added to this hazard.",
+      );
+      onConfirmed();
+    } catch (err: any) {
+      Alert.alert(
+        "Photo Update Failed",
+        err.message || "Failed to update the hazard photo.",
+      );
+    } finally {
+      setUpdatingPhoto(false);
+    }
   };
 
   const handleNavigate = () => {
@@ -175,26 +194,43 @@ export function HazardDetailSheet({
 
         <View style={styles.stats}>
           <View style={styles.stat}>
-            <Ionicons name="time-outline" size={18} color={Colors.textSecondary} />
+            <Ionicons
+              name="time-outline"
+              size={18}
+              color={Colors.textSecondary}
+            />
             <Text style={styles.statText}>
               Reported {formatTimeAgo(hazard.reportedAt)}
             </Text>
           </View>
           <View style={styles.stat}>
-            <Ionicons name="people-outline" size={18} color={Colors.textSecondary} />
+            <Ionicons
+              name="people-outline"
+              size={18}
+              color={Colors.textSecondary}
+            />
             <Text style={styles.statText}>
-              {hazard.confirmationCount} confirmation{hazard.confirmationCount !== 1 ? "s" : ""}
+              {hazard.confirmationCount} confirmation
+              {hazard.confirmationCount !== 1 ? "s" : ""}
             </Text>
           </View>
           <View style={styles.stat}>
-            <Ionicons name="timer-outline" size={18} color={Colors.textSecondary} />
+            <Ionicons
+              name="timer-outline"
+              size={18}
+              color={Colors.textSecondary}
+            />
             <Text style={styles.statText}>
               Expires in {formatTimeRemaining(hazard.expiresAt)}
             </Text>
           </View>
           {distance != null && (
             <View style={styles.stat}>
-              <Ionicons name="location-outline" size={18} color={Colors.textSecondary} />
+              <Ionicons
+                name="location-outline"
+                size={18}
+                color={Colors.textSecondary}
+              />
               <Text style={styles.statText}>{formatDistance(distance)}</Text>
             </View>
           )}
@@ -214,13 +250,51 @@ export function HazardDetailSheet({
               style={[styles.actionBtn, styles.photoBtn]}
               onPress={() => setCurrentView("photo")}
             >
-              <Ionicons name="image-outline" size={20} color={Colors.primary} />
+              <Ionicons
+                name="image-outline"
+                size={20}
+                color={Colors.primary}
+              />
               <Text style={styles.actionBtnText}>View Photo</Text>
             </Pressable>
           )}
         </View>
 
-        {canConfirm && (
+        {alreadyConfirmed && (
+          <Pressable
+            style={[
+              styles.editPhotoBtn,
+              updatingPhoto && styles.confirmBtnDisabled,
+            ]}
+            onPress={handleEditPhoto}
+            disabled={updatingPhoto}
+          >
+            {updatingPhoto ? (
+              <ActivityIndicator size="small" color={Colors.primary} />
+            ) : (
+              <>
+                <Ionicons
+                  name={hazard.photoUrl ? "create-outline" : "camera-outline"}
+                  size={20}
+                  color={Colors.primary}
+                />
+                <Text style={styles.editPhotoBtnText}>
+                  {hazard.photoUrl ? "Edit Photo" : "Add Photo"}
+                </Text>
+              </>
+            )}
+          </Pressable>
+        )}
+
+        {alreadyConfirmed ? (
+          <Pressable
+            style={[styles.confirmBtn, styles.confirmBtnDisabled]}
+            disabled
+          >
+            <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+            <Text style={styles.confirmBtnText}>Already Confirmed</Text>
+          </Pressable>
+        ) : canConfirm ? (
           <Pressable
             style={[styles.confirmBtn, confirming && styles.confirmBtnDisabled]}
             onPress={handleConfirmPress}
@@ -235,20 +309,21 @@ export function HazardDetailSheet({
               </>
             )}
           </Pressable>
-        )}
-
-        {distance != null && !canConfirm && (
+        ) : distance != null ? (
           <Text style={styles.tooFarText}>
             Move within 10m to confirm this hazard
           </Text>
-        )}
+        ) : null}
       </View>
     </View>
   );
 
   const renderPhoto = () => (
     <View style={styles.fullPhotoContainer}>
-      <Pressable style={styles.closePhotoBtn} onPress={() => setCurrentView("sheet")}>
+      <Pressable
+        style={styles.closePhotoBtn}
+        onPress={() => setCurrentView("sheet")}
+      >
         <Ionicons name="close" size={28} color="#FFF" />
       </Pressable>
       {hazard.photoUrl && (
@@ -261,53 +336,17 @@ export function HazardDetailSheet({
     </View>
   );
 
-  const renderConfirmPrompt = () => (
-    <View style={styles.promptOverlay}>
-      <View style={styles.promptSheet}>
-        <Text style={styles.promptTitle}>Add a confirmation photo?</Text>
-        <Text style={styles.promptSubtitle}>
-          Optionally take a photo to help verify this hazard
-        </Text>
-
-        <View style={styles.promptActions}>
-          <Pressable
-            style={styles.promptActionBtn}
-            onPress={() => handleConfirmWithPhoto(true)}
-          >
-            <View style={[styles.promptActionIcon, { backgroundColor: Colors.primaryLight }]}>
-              <Ionicons name="camera" size={24} color={Colors.primary} />
-            </View>
-            <Text style={styles.promptActionLabel}>Camera</Text>
-          </Pressable>
-          <Pressable
-            style={styles.promptActionBtn}
-            onPress={() => handleConfirmWithPhoto(false)}
-          >
-            <View style={[styles.promptActionIcon, { backgroundColor: Colors.primaryLight }]}>
-              <Ionicons name="images" size={24} color={Colors.primary} />
-            </View>
-            <Text style={styles.promptActionLabel}>Gallery</Text>
-          </Pressable>
-        </View>
-
-        <Pressable style={styles.skipPhotoBtn} onPress={handleConfirmSkipPhoto}>
-          <Text style={styles.skipPhotoText}>Skip — confirm without photo</Text>
-        </Pressable>
-      </View>
-    </View>
-  );
-
   return (
     <Modal
       visible={visible}
       animationType={currentView === "sheet" ? "slide" : "fade"}
       transparent={currentView !== "photo"}
-      onRequestClose={currentView === "sheet" ? handleClose : () => setCurrentView("sheet")}
+      onRequestClose={
+        currentView === "sheet" ? handleClose : () => setCurrentView("sheet")
+      }
     >
       {currentView === "sheet" && renderSheet()}
       {currentView === "photo" && renderPhoto()}
-      {currentView === "confirmPrompt" && renderConfirmPrompt()}
     </Modal>
   );
 }
-

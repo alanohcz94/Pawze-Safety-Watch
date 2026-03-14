@@ -130,6 +130,15 @@ export default function MapScreen() {
   });
 
   useEffect(() => {
+    if (!selectedHazard) return;
+
+    const latestHazard = hazards.find((hazard) => hazard.id === selectedHazard.id);
+    if (latestHazard) {
+      setSelectedHazard(latestHazard);
+    }
+  }, [hazards, selectedHazard?.id]);
+
+  useEffect(() => {
     (async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
@@ -173,6 +182,17 @@ export default function MapScreen() {
     setSelectedHazard(hazard);
     setShowDetail(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handleHazardUpdated = (updatedHazard: HazardItem) => {
+    setSelectedHazard(updatedHazard);
+    queryClient.setQueryData<HazardItem[]>(
+      ["hazards", centerLat, centerLng],
+      (current = []) =>
+        current.map((hazard) =>
+          hazard.id === updatedHazard.id ? updatedHazard : hazard,
+        ),
+    );
   };
 
   const handleClusterPress = (cluster: ClusterGroup) => {
@@ -333,6 +353,7 @@ export default function MapScreen() {
         userLat={userLocation?.lat ?? null}
         userLng={userLocation?.lng ?? null}
         onConfirmed={() => refetchHazards()}
+        onHazardUpdated={handleHazardUpdated}
       />
 
       <ProfileMenu visible={showProfile} onClose={() => setShowProfile(false)} />
@@ -433,7 +454,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.warning,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",

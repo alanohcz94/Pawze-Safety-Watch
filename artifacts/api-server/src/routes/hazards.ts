@@ -6,7 +6,7 @@ import type {
   ConfirmHazardRequest,
   GetHazardSummaryParams,
 } from "@workspace/api-zod";
-import { eq, and, gte, sql } from "drizzle-orm";
+import { eq, and, gte, sql, inArray } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -35,6 +35,36 @@ function parseLatLng(query: any): { lat: number; lng: number; radius?: number } 
   if (isNaN(lat) || isNaN(lng)) return null;
   const radius = query.radius ? parseFloat(query.radius) : undefined;
   return { lat, lng, radius: radius && !isNaN(radius) ? radius : undefined };
+}
+
+function serializeHazard(
+  hazard: {
+    id: string;
+    category: string;
+    lat: number;
+    lng: number;
+    photoUrl: string | null;
+    reportedBy: string;
+    reportedByName?: string | null;
+    reportedAt: Date;
+    expiresAt: Date;
+    confirmationCount: number;
+  },
+  userHasConfirmed = false,
+) {
+  return {
+    id: hazard.id,
+    category: hazard.category,
+    lat: hazard.lat,
+    lng: hazard.lng,
+    photoUrl: hazard.photoUrl,
+    reportedBy: hazard.reportedBy,
+    reportedByName: hazard.reportedByName ?? null,
+    reportedAt: hazard.reportedAt.toISOString(),
+    expiresAt: hazard.expiresAt.toISOString(),
+    confirmationCount: hazard.confirmationCount,
+    userHasConfirmed,
+  };
 }
 
 router.get("/hazards/summary", async (req: Request, res: Response) => {
@@ -105,12 +135,30 @@ router.get("/hazards", async (req: Request, res: Response) => {
     (h) => haversineDistance(lat, lng, h.lat, h.lng) <= radiusM,
   );
 
+  const confirmedIds = new Set<string>();
+  if (req.isAuthenticated() && filtered.length > 0) {
+    const confirmations = await db
+      .select({ hazardId: hazardConfirmationsTable.hazardId })
+      .from(hazardConfirmationsTable)
+      .where(
+        and(
+          eq(hazardConfirmationsTable.userId, req.user.id),
+          inArray(
+            hazardConfirmationsTable.hazardId,
+            filtered.map((hazard) => hazard.id),
+          ),
+        ),
+      );
+
+    confirmations.forEach((confirmation) => {
+      confirmedIds.add(confirmation.hazardId);
+    });
+  }
+
   res.json({
-    hazards: filtered.map((h) => ({
-      ...h,
-      reportedAt: h.reportedAt.toISOString(),
-      expiresAt: h.expiresAt.toISOString(),
-    })),
+    hazards: filtered.map((hazard) =>
+      serializeHazard(hazard, confirmedIds.has(hazard.id)),
+    ),
   });
 });
 
@@ -142,16 +190,13 @@ router.post("/hazards", async (req: Request, res: Response) => {
     .returning();
 
   res.status(201).json({
-    id: hazard.id,
-    category: hazard.category,
-    lat: hazard.lat,
-    lng: hazard.lng,
-    photoUrl: hazard.photoUrl,
-    reportedBy: hazard.reportedBy,
-    reportedByName: req.user.firstName,
-    reportedAt: hazard.reportedAt.toISOString(),
-    expiresAt: hazard.expiresAt.toISOString(),
-    confirmationCount: hazard.confirmationCount,
+    ...serializeHazard(
+      {
+        ...hazard,
+        reportedByName: req.user.firstName,
+      },
+      false,
+    ),
   });
 });
 
@@ -218,16 +263,64 @@ router.post("/hazards/:id/confirm", async (req: Request, res: Response) => {
     .returning();
 
   res.json({
-    id: updated.id,
-    category: updated.category,
-    lat: updated.lat,
-    lng: updated.lng,
-    photoUrl: updated.photoUrl,
-    reportedBy: updated.reportedBy,
-    reportedByName: null,
-    reportedAt: updated.reportedAt.toISOString(),
-    expiresAt: updated.expiresAt.toISOString(),
-    confirmationCount: updated.confirmationCount,
+    ...serializeHazard(updated, true),
+  });
+});
+
+router.patch("/hazards/:id/photo", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+
+  const { photoUrl } = req.body as { photoUrl?: string | null };
+  if (typeof photoUrl !== "string" || photoUrl.trim().length === 0) {
+    res.status(400).json({ error: "Invalid request body: photoUrl required" });
+    return;
+  }
+
+  const hazardId = req.params.id;
+
+  const [hazard] = await db
+    .select()
+    .from(hazardsTable)
+    .where(eq(hazardsTable.id, hazardId));
+
+  if (!hazard) {
+    res.status(404).json({ error: "Hazard not found" });
+    return;
+  }
+
+  if (hazard.expiresAt < new Date()) {
+    res.status(400).json({ error: "Hazard has expired" });
+    return;
+  }
+
+  const existing = await db
+    .select({ id: hazardConfirmationsTable.id })
+    .from(hazardConfirmationsTable)
+    .where(
+      and(
+        eq(hazardConfirmationsTable.hazardId, hazardId),
+        eq(hazardConfirmationsTable.userId, req.user.id),
+      ),
+    );
+
+  if (existing.length === 0) {
+    res.status(403).json({
+      error: "Only users who confirmed this hazard can edit its photo",
+    });
+    return;
+  }
+
+  const [updated] = await db
+    .update(hazardsTable)
+    .set({ photoUrl: photoUrl.trim() })
+    .where(eq(hazardsTable.id, hazardId))
+    .returning();
+
+  res.json({
+    ...serializeHazard(updated, true),
   });
 });
 

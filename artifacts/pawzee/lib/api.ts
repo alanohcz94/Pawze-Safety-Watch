@@ -27,6 +27,7 @@ export interface HazardItem {
   reportedAt: string;
   expiresAt: string;
   confirmationCount: number;
+  userHasConfirmed: boolean;
 }
 
 export interface HazardSummary {
@@ -47,6 +48,15 @@ export interface VetClinic {
   emergency: boolean;
 }
 
+function normalizeHazardItem(hazard: Omit<HazardItem, "userHasConfirmed"> & {
+  userHasConfirmed?: boolean;
+}): HazardItem {
+  return {
+    userHasConfirmed: false,
+    ...hazard,
+  };
+}
+
 export async function fetchHazards(lat: number, lng: number, radius?: number): Promise<HazardItem[]> {
   const base = getApiBaseUrl();
   const params = new URLSearchParams({
@@ -59,7 +69,7 @@ export async function fetchHazards(lat: number, lng: number, radius?: number): P
   });
   if (!res.ok) throw new Error("Failed to fetch hazards");
   const data = await res.json();
-  return data.hazards;
+  return data.hazards.map(normalizeHazardItem);
 }
 
 export async function createHazard(body: {
@@ -81,26 +91,44 @@ export async function createHazard(body: {
     const err = await res.json().catch(() => ({ error: "Failed" }));
     throw new Error(err.error || "Failed to create hazard");
   }
-  return res.json();
+  const data = await res.json();
+  return normalizeHazardItem(data);
 }
 
-export async function confirmHazard(id: string, lat: number, lng: number, photoUrl?: string): Promise<HazardItem> {
+export async function confirmHazard(id: string, lat: number, lng: number): Promise<HazardItem> {
   const base = getApiBaseUrl();
-  const body: Record<string, unknown> = { lat, lng };
-  if (photoUrl) body.photoUrl = photoUrl;
   const res = await fetch(`${base}/api/hazards/${id}/confirm`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       ...(await getAuthHeaders()),
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ lat, lng }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Failed" }));
     throw new Error(err.error || "Failed to confirm hazard");
   }
-  return res.json();
+  const data = await res.json();
+  return normalizeHazardItem(data);
+}
+
+export async function updateHazardPhoto(id: string, photoUrl: string): Promise<HazardItem> {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/hazards/${id}/photo`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(await getAuthHeaders()),
+    },
+    body: JSON.stringify({ photoUrl }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Failed" }));
+    throw new Error(err.error || "Failed to update hazard photo");
+  }
+  const data = await res.json();
+  return normalizeHazardItem(data);
 }
 
 export async function fetchHazardSummary(lat: number, lng: number, radius?: number): Promise<HazardSummary> {

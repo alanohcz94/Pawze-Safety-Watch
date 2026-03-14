@@ -108,6 +108,21 @@ const styles = StyleSheet.create({
   confirmBtnDisabled: {
     opacity: 0.6,
   },
+  editPhotoBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: Colors.primaryLight,
+    marginBottom: 12,
+  },
+  editPhotoBtnText: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.primary,
+  },
   confirmBtnText: {
     fontSize: 15,
     fontFamily: "Inter_600SemiBold",
@@ -141,65 +156,6 @@ const styles = StyleSheet.create({
   fullPhoto: {
     width: "100%",
     height: "80%",
-  },
-  promptOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: Colors.overlay,
-    paddingHorizontal: 24,
-  },
-  promptSheet: {
-    backgroundColor: Colors.surface,
-    borderRadius: 20,
-    padding: 24,
-    width: "100%",
-    maxWidth: 340,
-    alignItems: "center",
-  },
-  promptTitle: {
-    fontSize: 18,
-    fontFamily: "Inter_700Bold",
-    color: Colors.text,
-    textAlign: "center",
-    marginBottom: 4,
-  },
-  promptSubtitle: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textSecondary,
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  promptActions: {
-    flexDirection: "row",
-    gap: 20,
-    marginBottom: 16,
-  },
-  promptActionBtn: {
-    alignItems: "center",
-    gap: 8,
-  },
-  promptActionIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  promptActionLabel: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    color: Colors.text,
-  },
-  skipPhotoBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-  },
-  skipPhotoText: {
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
-    color: Colors.textSecondary,
   },
 });
 
