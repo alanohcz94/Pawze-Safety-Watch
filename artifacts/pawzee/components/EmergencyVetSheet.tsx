@@ -16,7 +16,7 @@ import { haversineDistance } from "@/lib/hazards";
 import { SINGAPORE_ER_VETS } from "@/constants/constantVariable";
 import { styles } from "./componentStyleSheet/StyleSheetEmergencyVetSheet";
 
-const VET_SEARCH_RADIUS_METERS = 8_000;
+const VET_SEARCH_RADIUS_METERS = 8000;
 
 function isInSingapore(lat: number, lng: number): boolean {
   return lat >= 1.15 && lat <= 1.47 && lng >= 103.6 && lng <= 104.1;
