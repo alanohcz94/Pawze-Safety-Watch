@@ -5,6 +5,11 @@ const { Readable } = require("stream");
 const { pipeline } = require("stream/promises");
 
 let metroProcess = null;
+const metroCommand = process.platform === "win32" ? "cmd.exe" : "pnpm";
+const metroArgs =
+  process.platform === "win32"
+    ? ["/c", "pnpm", "exec", "expo", "start", "--no-dev", "--minify", "--localhost"]
+    : ["exec", "expo", "start", "--no-dev", "--minify", "--localhost"];
 
 const projectRoot = path.resolve(__dirname, "..");
 
@@ -147,15 +152,8 @@ async function startMetro(expoPublicDomain, expoPublicReplId) {
   }
 
   metroProcess = spawn(
-    "pnpm",
-    [
-      "exec",
-      "expo",
-      "start",
-      "--no-dev",
-      "--minify",
-      "--localhost",
-    ],
+    metroCommand,
+    metroArgs,
     {
       stdio: ["ignore", "pipe", "pipe"],
       detached: false,
