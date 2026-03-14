@@ -1,8 +1,6 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { HazardIcon } from "./HazardIcon";
+import { View } from "react-native";
 import type { HazardItem } from "@/lib/api";
-import type { HazardCategory } from "@/lib/hazards";
 
 interface HazardMarkerProps {
   hazard: HazardItem;
