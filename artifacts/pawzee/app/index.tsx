@@ -134,7 +134,11 @@ export default function MapScreen() {
 
     const latestHazard = hazards.find((hazard) => hazard.id === selectedHazard.id);
     if (latestHazard) {
-      setSelectedHazard(latestHazard);
+      setSelectedHazard({
+        ...latestHazard,
+        userHasConfirmed:
+          latestHazard.userHasConfirmed || selectedHazard.userHasConfirmed,
+      });
     }
   }, [hazards, selectedHazard?.id]);
 

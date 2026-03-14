@@ -100,6 +100,7 @@ export function HazardDetailSheet({
       const nextHazard = {
         ...hazard,
         ...updated,
+        userHasConfirmed: true,
       };
       onHazardUpdated(nextHazard);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -134,6 +135,7 @@ export function HazardDetailSheet({
       const nextHazard = {
         ...hazard,
         ...updated,
+        userHasConfirmed: true,
       };
       onHazardUpdated(nextHazard);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
