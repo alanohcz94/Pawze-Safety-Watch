@@ -181,8 +181,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await SecureStore.setItemAsync(IS_GUEST_KEY, "true");
         setIsGuest(true);
         await fetchUser();
-      } else {
-        setIsLoading(false);
       }
     } catch (err) {
       console.error("Guest login error:", err);
