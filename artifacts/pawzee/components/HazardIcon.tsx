@@ -1,8 +1,7 @@
 import React from "react";
-import { View } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { MaterialCommunityIcons, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { HAZARD_CONFIGS, type HazardCategory } from "@/lib/hazards";
-import styles from "./componentStyleSheets/HazardIconStyleSheet";
 
 type MCIName = React.ComponentProps<typeof MaterialCommunityIcons>["name"];
 type IonName = React.ComponentProps<typeof Ionicons>["name"];
@@ -48,3 +47,11 @@ export function HazardIcon({ category, size = 32 }: HazardIconProps) {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+  },
+});

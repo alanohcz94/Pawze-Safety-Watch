@@ -4,21 +4,21 @@
     "slug": "pawzee",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo.png",
+    "icon": "./assets/images/icon.png",
     "scheme": "pawzee",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/splash-logo.png",
+      "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#E0F5F2"
     },
     "ios": {
       "supportsTablet": false
     },
     "android": {},
     "web": {
-      "favicon": "./assets/images/logo.png"
+      "favicon": "./assets/images/icon.png"
     },
     "plugins": [
       [
