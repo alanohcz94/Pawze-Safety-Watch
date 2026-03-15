@@ -179,28 +179,6 @@ export default function ReportScreen() {
         </View>
       )}
 
-      {/* {step === 2 && (
-        <View style={styles.stepContent}>
-          <Text style={styles.stepTitle}>Add a photo</Text>
-          
-
-          {photoUri ? (
-            
-          ) : (
-            
-          )}
-
-          <View style={styles.navButtons}>
-            <Pressable style={styles.skipBtn} onPress={() => setStep(3)}>
-              <Text style={styles.skipBtnText}>
-                {photoUri ? "Next" : "Skip"}
-              </Text>
-              <Ionicons name="arrow-forward" size={18} color={Colors.primary} />
-            </Pressable>
-          </View>
-        </View>
-      )} */}
-
       {step === 2 && config && (
         <View style={styles.stepContent}>
           <Text style={styles.stepTitle}>Review & submit</Text>
@@ -211,37 +189,15 @@ export default function ReportScreen() {
           <View style={styles.confirmCard}>
             <HazardIcon category={selectedCategory!} size={56} />
             <Text style={styles.confirmCategory}>{config.label}</Text>
-
             {/* Add photo from gallery or camera */}
             <Text style={styles.stepSubtitle}>
               Optional: Take or select a photo of the hazard
             </Text>
-            <View style={styles.photoActions}>
-              <Pressable
-                style={styles.photoActionBtn}
-                onPress={handleTakePhoto}
-              >
-                <View style={styles.photoActionIcon}>
-                  <Ionicons name="camera" size={28} color={Colors.primary} />
-                </View>
-                <Text style={styles.photoActionText}>Take Photo</Text>
-              </Pressable>
-              <Pressable
-                style={styles.photoActionBtn}
-                onPress={handlePickPhoto}
-              >
-                <View style={styles.photoActionIcon}>
-                  <Ionicons name="images" size={28} color={Colors.primary} />
-                </View>
-                <Text style={styles.photoActionText}>From Gallery</Text>
-              </Pressable>
-            </View>
-
-            {photoUri && (
+            {photoUri ? (
               <View style={styles.photoPreview}>
                 <Image
                   source={{ uri: photoUri }}
-                  style={styles.confirmPhoto}
+                  style={styles.previewImage}
                   contentFit="cover"
                 />
                 <Pressable
@@ -249,6 +205,54 @@ export default function ReportScreen() {
                   onPress={() => setPhotoUri(null)}
                 >
                   <Ionicons name="close-circle" size={28} color="#FFF" />
+                </Pressable>
+
+                <View style={styles.photoPreviewActions}>
+                  <Pressable
+                    style={styles.photoPreviewActionBtn}
+                    onPress={handleTakePhoto}
+                  >
+                    <Ionicons
+                      name="camera-outline"
+                      size={16}
+                      color={Colors.primary}
+                    />
+                    <Text style={styles.photoPreviewActionText}>Retake</Text>
+                  </Pressable>
+                  <Pressable
+                    style={styles.photoPreviewActionBtn}
+                    onPress={handlePickPhoto}
+                  >
+                    <Ionicons
+                      name="images-outline"
+                      size={16}
+                      color={Colors.primary}
+                    />
+                    <Text style={styles.photoPreviewActionText}>
+                      Choose Another
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.photoActions}>
+                <Pressable
+                  style={styles.photoActionBtn}
+                  onPress={handleTakePhoto}
+                >
+                  <View style={styles.photoActionIcon}>
+                    <Ionicons name="camera" size={28} color={Colors.primary} />
+                  </View>
+                  <Text style={styles.photoActionText}>Take Photo</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.photoActionBtn}
+                  onPress={handlePickPhoto}
+                >
+                  <View style={styles.photoActionIcon}>
+                    <Ionicons name="images" size={28} color={Colors.primary} />
+                  </View>
+                  <Text style={styles.photoActionText}>From Gallery</Text>
                 </Pressable>
               </View>
             )}

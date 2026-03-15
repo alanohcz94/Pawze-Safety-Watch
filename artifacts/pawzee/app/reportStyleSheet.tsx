@@ -109,6 +109,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 16,
     marginTop: 20,
+    width: "100%",
   },
   photoActionBtn: {
     flex: 1,
@@ -129,6 +130,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   photoPreview: {
+    width: "100%",
     marginTop: 20,
     borderRadius: 16,
     overflow: "hidden",
@@ -143,6 +145,30 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 12,
     right: 12,
+    zIndex: 2,
+  },
+  photoPreviewActions: {
+    position: "absolute",
+    left: 12,
+    right: 12,
+    bottom: 12,
+    flexDirection: "row",
+    gap: 10,
+  },
+  photoPreviewActionBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.94)",
+  },
+  photoPreviewActionText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.primary,
   },
   navButtons: {
     flexDirection: "row",
