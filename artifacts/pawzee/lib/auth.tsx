@@ -25,6 +25,7 @@ interface AuthContextValue {
   login: () => Promise<void>;
   loginAsGuest: () => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue>({
@@ -35,6 +36,7 @@ const AuthContext = createContext<AuthContextValue>({
   login: async () => {},
   loginAsGuest: async () => {},
   logout: async () => {},
+  refreshUser: async () => {},
 });
 
 function getApiBaseUrl(): string {
@@ -267,6 +269,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         loginAsGuest,
         logout,
+        refreshUser: fetchUser,
       }}
     >
       {children}

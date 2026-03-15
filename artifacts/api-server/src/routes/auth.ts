@@ -31,6 +31,22 @@ const OIDC_COOKIE_TTL = 10 * 60 * 1000;
 
 const router: IRouter = Router();
 
+function toAuthUser(user: {
+  id: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  profileImageUrl: string | null;
+}): AuthUser {
+  return {
+    id: user.id,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    profileImageUrl: user.profileImageUrl,
+  };
+}
+
 function getOrigin(req: Request): string {
   const proto = req.headers["x-forwarded-proto"] || "https";
   const host =
@@ -66,14 +82,22 @@ function getSafeReturnTo(value: unknown): string {
 }
 
 async function upsertUser(claims: Record<string, unknown>) {
+  const userId = claims.sub as string;
+  const [existingUser] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, userId));
+
   const userData = {
-    id: claims.sub as string,
+    id: userId,
     email: (claims.email as string) || null,
     firstName: (claims.first_name as string) || null,
     lastName: (claims.last_name as string) || null,
-    profileImageUrl: (claims.profile_image_url || claims.picture) as
-      | string
-      | null,
+    // Keep a user-uploaded profile image instead of overwriting it with the
+    // provider image on every login.
+    profileImageUrl:
+      existingUser?.profileImageUrl ||
+      ((claims.profile_image_url || claims.picture) as string | null),
   };
 
   const [user] = await db
@@ -108,10 +132,20 @@ async function transferGuestData(guestUserId: string, userId: string) {
   });
 }
 
-router.get("/auth/user", (req: Request, res: Response) => {
-  const response: AuthUserEnvelope = {
-    user: req.isAuthenticated() ? req.user : null,
-  };
+router.get("/auth/user", async (req: Request, res: Response) => {
+  let user: AuthUser | null = null;
+  const currentUser = req.user as { id?: string } | undefined;
+
+  if (req.isAuthenticated() && currentUser?.id) {
+    const [dbUser] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, currentUser.id));
+
+    user = dbUser ? toAuthUser(dbUser) : null;
+  }
+
+  const response: AuthUserEnvelope = { user };
   res.json(response);
 });
 
@@ -193,13 +227,7 @@ router.get("/callback", async (req: Request, res: Response) => {
 
   const now = Math.floor(Date.now() / 1000);
   const sessionData: SessionData = {
-    user: {
-      id: dbUser.id,
-      email: dbUser.email,
-      firstName: dbUser.firstName,
-      lastName: dbUser.lastName,
-      profileImageUrl: dbUser.profileImageUrl,
-    },
+    user: toAuthUser(dbUser),
     access_token: tokens.access_token,
     refresh_token: tokens.refresh_token,
     expires_at: tokens.expiresIn() ? now + tokens.expiresIn()! : claims.exp,
@@ -260,19 +288,14 @@ router.post(
         claims as unknown as Record<string, unknown>,
       );
 
-      if (req.user?.id) {
-        await transferGuestData(req.user.id, dbUser.id);
+      const currentUser = req.user as { id?: string } | undefined;
+      if (currentUser?.id) {
+        await transferGuestData(currentUser.id, dbUser.id);
       }
 
       const now = Math.floor(Date.now() / 1000);
       const sessionData: SessionData = {
-        user: {
-          id: dbUser.id,
-          email: dbUser.email,
-          firstName: dbUser.firstName,
-          lastName: dbUser.lastName,
-          profileImageUrl: dbUser.profileImageUrl,
-        },
+        user: toAuthUser(dbUser),
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
         expires_at: tokens.expiresIn() ? now + tokens.expiresIn()! : claims.exp,
@@ -304,13 +327,7 @@ router.post("/guest/session", async (req: Request, res: Response) => {
       .returning();
 
     const sessionData: SessionData = {
-      user: {
-        id: guestUser.id,
-        email: guestUser.email,
-        firstName: guestUser.firstName,
-        lastName: guestUser.lastName,
-        profileImageUrl: guestUser.profileImageUrl,
-      },
+      user: toAuthUser(guestUser),
       access_token: "guest",
     };
 

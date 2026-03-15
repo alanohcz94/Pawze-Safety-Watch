@@ -7,6 +7,7 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons, Feather } from "@expo/vector-icons";
+import { router } from "expo-router";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/lib/auth";
 import { styles } from "./componentStyleSheet/StyleSheetProfileMenu";
@@ -18,6 +19,12 @@ interface ProfileMenuProps {
 
 export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
   const { user, isAuthenticated, isGuest, login, loginAsGuest, logout } = useAuth();
+
+  const displayName = isGuest
+    ? "Guest Pawzer"
+    : `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
+      user?.email ||
+      "Pawzer";
 
   const handleLogout = async () => {
     await logout();
@@ -44,6 +51,11 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
     onClose();
   };
 
+  const handleProfile = () => {
+    onClose();
+    router.push("/profile" as never);
+  };
+
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
@@ -67,9 +79,7 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
                   </View>
                 )}
                 <View style={styles.profileInfo}>
-                  <Text style={styles.name}>
-                    {isGuest ? "Guest User" : `${user.firstName || "User"} ${user.lastName || ""}`}
-                  </Text>
+                  <Text style={styles.name}>{displayName}</Text>
                   {!isGuest && user.email && (
                     <Text style={styles.email}>{user.email}</Text>
                   )}
@@ -81,6 +91,15 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
 
               <View style={styles.divider} />
 
+              <Pressable style={styles.menuItem} onPress={handleProfile}>
+                <Ionicons
+                  name="person-circle-outline"
+                  size={20}
+                  color={Colors.text}
+                />
+                <Text style={styles.menuItemText}>Profile</Text>
+              </Pressable>
+
               {isGuest && (
                 <Pressable style={styles.menuItem} onPress={handleUpgradeToReplit}>
                   <Feather name="log-in" size={20} color={Colors.primary} />
@@ -90,19 +109,21 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
                 </Pressable>
               )}
 
-              {isGuest ? (
-                <Pressable style={styles.menuItem} onPress={handleGuestReset}>
-                  <Feather name="refresh-cw" size={20} color={Colors.textSecondary} />
-                  <Text style={styles.menuItemText}>Start Fresh as Guest</Text>
-                </Pressable>
-              ) : (
-                <Pressable style={styles.menuItem} onPress={handleLogout}>
-                  <Feather name="log-out" size={20} color={Colors.danger} />
-                  <Text style={[styles.menuItemText, { color: Colors.danger }]}>
-                    Log Out
-                  </Text>
-                </Pressable>
-              )}
+              <Pressable style={styles.menuItem} onPress={handleLogout}>
+                <Feather
+                  name={isGuest ? "refresh-cw" : "log-out"}
+                  size={20}
+                  color={isGuest ? Colors.textSecondary : Colors.danger}
+                />
+                <Text
+                  style={[
+                    styles.menuItemText,
+                    !isGuest && { color: Colors.danger },
+                  ]}
+                >
+                  Logout
+                </Text>
+              </Pressable>
             </>
           ) : (
             <View style={styles.authActions}>

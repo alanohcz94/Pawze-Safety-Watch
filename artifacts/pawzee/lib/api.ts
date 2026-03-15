@@ -36,6 +36,13 @@ export interface HazardSummary {
   breakdown: Record<string, number>;
 }
 
+export interface ProfileStats {
+  hazardsReported: number;
+  hazardsConfirmed: number;
+  totalSteps: number;
+  weeklySteps: number;
+}
+
 export interface VetClinic {
   id: string;
   name: string;
@@ -173,6 +180,54 @@ export async function uploadPhoto(uri: string): Promise<string> {
 
   const data = await res.json();
   return data.photoUrl;
+}
+
+export async function fetchProfileStats(): Promise<ProfileStats> {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/profile`, {
+    headers: await getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Failed" }));
+    throw new Error(err.error || "Failed to fetch profile");
+  }
+
+  const data = await res.json();
+  return data.stats;
+}
+
+export async function updateProfileImage(profileImageUrl: string): Promise<string> {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/profile/image`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(await getAuthHeaders()),
+    },
+    body: JSON.stringify({ profileImageUrl }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Failed" }));
+    throw new Error(err.error || "Failed to update profile image");
+  }
+
+  const data = await res.json();
+  return data.profileImageUrl;
+}
+
+export async function deleteProfileAccount(): Promise<void> {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/profile`, {
+    method: "DELETE",
+    headers: await getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Failed" }));
+    throw new Error(err.error || "Failed to delete account");
+  }
 }
 
 export async function fetchNearbyVets(lat: number, lng: number, radius?: number): Promise<VetClinic[]> {
