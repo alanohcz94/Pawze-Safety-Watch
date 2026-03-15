@@ -23,7 +23,6 @@ import { router } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
-import { useAuth } from "@/lib/auth";
 import { fetchHazards, fetchHazardSummary } from "@/lib/api";
 import type { HazardItem, HazardSummary } from "@/lib/api";
 import { haversineDistance } from "@/lib/hazards";
@@ -85,7 +84,6 @@ function getZoomLevel(latDelta: number): number {
 
 export default function MapScreen() {
   const insets = useSafeAreaInsets();
-  const { isAuthenticated, login } = useAuth();
   const queryClient = useQueryClient();
   const mapRef = useRef<MapView>(null);
 
@@ -226,13 +224,6 @@ export default function MapScreen() {
   };
 
   const handleReportPress = () => {
-    if (!isAuthenticated) {
-      Alert.alert("Login Required", "Please log in to report hazards.", [
-        { text: "Cancel" },
-        { text: "Log In", onPress: login },
-      ]);
-      return;
-    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push("/report");
   };

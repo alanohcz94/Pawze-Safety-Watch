@@ -8,7 +8,13 @@ import type {
   LogoutSuccess,
   AuthUser,
 } from "@workspace/api-zod";
-import { db, usersTable } from "@workspace/db";
+import {
+  db,
+  usersTable,
+  hazardsTable,
+  hazardConfirmationsTable,
+} from "@workspace/db";
+import { eq } from "drizzle-orm";
 import {
   clearSession,
   getOidcConfig,
@@ -82,6 +88,24 @@ async function upsertUser(claims: Record<string, unknown>) {
     })
     .returning();
   return user;
+}
+
+async function transferGuestData(guestUserId: string, userId: string) {
+  if (!guestUserId.startsWith("guest-") || guestUserId === userId) {
+    return;
+  }
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(hazardsTable)
+      .set({ reportedBy: userId })
+      .where(eq(hazardsTable.reportedBy, guestUserId));
+
+    await tx
+      .update(hazardConfirmationsTable)
+      .set({ userId })
+      .where(eq(hazardConfirmationsTable.userId, guestUserId));
+  });
 }
 
 router.get("/auth/user", (req: Request, res: Response) => {
@@ -235,6 +259,10 @@ router.post(
       const dbUser = await upsertUser(
         claims as unknown as Record<string, unknown>,
       );
+
+      if (req.user?.id) {
+        await transferGuestData(req.user.id, dbUser.id);
+      }
 
       const now = Math.floor(Date.now() / 1000);
       const sessionData: SessionData = {

@@ -67,40 +67,91 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     discovery,
   );
 
-  const fetchUser = useCallback(async () => {
+  const createGuestSession = useCallback(async (): Promise<string | null> => {
     try {
-      const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+      const apiBase = getApiBaseUrl();
+      const res = await fetch(`${apiBase}/api/guest/session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!res.ok) {
+        console.error("Guest session failed:", res.status);
+        return null;
+      }
+
+      const data = await res.json();
+      if (!data.token) {
+        return null;
+      }
+
+      await SecureStore.setItemAsync(AUTH_TOKEN_KEY, data.token);
+      await SecureStore.setItemAsync(IS_GUEST_KEY, "true");
+      return data.token;
+    } catch (err) {
+      console.error("Guest session error:", err);
+      return null;
+    }
+  }, []);
+
+  const fetchUser = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const apiBase = getApiBaseUrl();
+      const loadUser = async (token: string) => {
+        const res = await fetch(`${apiBase}/api/auth/user`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        return res.json();
+      };
+
+      let token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+      let guestFlag = await SecureStore.getItemAsync(IS_GUEST_KEY);
+
+      if (!token) {
+        token = await createGuestSession();
+        guestFlag = token ? "true" : null;
+      }
+
       if (!token) {
         setUser(null);
         setIsGuest(false);
-        setIsLoading(false);
         return;
       }
 
-      const guestFlag = await SecureStore.getItemAsync(IS_GUEST_KEY);
+      let data = await loadUser(token);
 
-      const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/api/auth/user`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
+      if (!data.user) {
+        await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
+        await SecureStore.deleteItemAsync(IS_GUEST_KEY);
+        token = await createGuestSession();
+        guestFlag = token ? "true" : null;
+
+        if (!token) {
+          setUser(null);
+          setIsGuest(false);
+          return;
+        }
+
+        data = await loadUser(token);
+      }
 
       if (data.user) {
         setUser(data.user);
         setIsGuest(guestFlag === "true");
       } else {
-        await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
-        await SecureStore.deleteItemAsync(IS_GUEST_KEY);
         setUser(null);
         setIsGuest(false);
       }
-    } catch {
+    } catch (err) {
+      console.error("Fetch user error:", err);
       setUser(null);
       setIsGuest(false);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [createGuestSession]);
 
   useEffect(() => {
     fetchUser();
@@ -119,15 +170,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
+        const currentToken = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+
         const exchangeRes = await fetch(`${apiBase}/api/mobile-auth/token-exchange`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(currentToken
+              ? { Authorization: `Bearer ${currentToken}` }
+              : {}),
+          },
           body: JSON.stringify({
             code,
             code_verifier: request.codeVerifier,
             redirect_uri: redirectUri,
             state,
-            nonce: request.nonce,
           }),
         });
 
@@ -163,30 +220,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginAsGuest = useCallback(async () => {
     try {
       setIsLoading(true);
-      const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/api/guest/session`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (!res.ok) {
-        console.error("Guest session failed:", res.status);
+      await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
+      await SecureStore.deleteItemAsync(IS_GUEST_KEY);
+      const token = await createGuestSession();
+      if (!token) {
+        setUser(null);
+        setIsGuest(false);
         setIsLoading(false);
         return;
       }
-
-      const data = await res.json();
-      if (data.token) {
-        await SecureStore.setItemAsync(AUTH_TOKEN_KEY, data.token);
-        await SecureStore.setItemAsync(IS_GUEST_KEY, "true");
-        setIsGuest(true);
-        await fetchUser();
-      }
+      await fetchUser();
     } catch (err) {
       console.error("Guest login error:", err);
       setIsLoading(false);
     }
-  }, [fetchUser]);
+  }, [createGuestSession, fetchUser]);
 
   const logout = useCallback(async () => {
     try {
@@ -200,12 +248,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch {
     } finally {
+      setIsLoading(true);
       await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
       await SecureStore.deleteItemAsync(IS_GUEST_KEY);
       setUser(null);
       setIsGuest(false);
+      await fetchUser();
     }
-  }, []);
+  }, [fetchUser]);
 
   return (
     <AuthContext.Provider

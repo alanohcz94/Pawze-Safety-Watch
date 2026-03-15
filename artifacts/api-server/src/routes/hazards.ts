@@ -1,16 +1,14 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db, hazardsTable, hazardConfirmationsTable, usersTable } from "@workspace/db";
 import type {
-  ListHazardsParams,
   CreateHazardRequest,
   ConfirmHazardRequest,
-  GetHazardSummaryParams,
 } from "@workspace/api-zod";
 import { eq, and, gte, sql, inArray } from "drizzle-orm";
+import { calculateHazardExpiry } from "../lib/hazardExpiry";
 
 const router: IRouter = Router();
 
-const HAZARD_EXPIRY_DAYS = 10;
 const MAX_CONFIRM_DISTANCE_M = 10;
 
 function haversineDistance(
@@ -174,8 +172,13 @@ router.post("/hazards", async (req: Request, res: Response) => {
     return;
   }
 
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + HAZARD_EXPIRY_DAYS);
+  const reportedAt = new Date();
+  const expiresAt = calculateHazardExpiry({
+    category,
+    reportedAt,
+    photoUrl,
+    confirmationCount: 0,
+  });
 
   const [hazard] = await db
     .insert(hazardsTable)
@@ -185,6 +188,7 @@ router.post("/hazards", async (req: Request, res: Response) => {
       lng,
       photoUrl: photoUrl ?? null,
       reportedBy: req.user.id,
+      reportedAt,
       expiresAt,
     })
     .returning();
@@ -256,9 +260,20 @@ router.post("/hazards/:id/confirm", async (req: Request, res: Response) => {
     photoUrl: typeof photoUrl === "string" ? photoUrl : null,
   });
 
+  const nextConfirmationCount = hazard.confirmationCount + 1;
+  const nextExpiresAt = calculateHazardExpiry({
+    category: hazard.category,
+    reportedAt: hazard.reportedAt,
+    photoUrl: hazard.photoUrl,
+    confirmationCount: nextConfirmationCount,
+  });
+
   const [updated] = await db
     .update(hazardsTable)
-    .set({ confirmationCount: sql`${hazardsTable.confirmationCount} + 1` })
+    .set({
+      confirmationCount: sql`${hazardsTable.confirmationCount} + 1`,
+      expiresAt: nextExpiresAt,
+    })
     .where(eq(hazardsTable.id, hazardId))
     .returning();
 
@@ -315,7 +330,15 @@ router.patch("/hazards/:id/photo", async (req: Request, res: Response) => {
 
   const [updated] = await db
     .update(hazardsTable)
-    .set({ photoUrl: photoUrl.trim() })
+    .set({
+      photoUrl: photoUrl.trim(),
+      expiresAt: calculateHazardExpiry({
+        category: hazard.category,
+        reportedAt: hazard.reportedAt,
+        photoUrl,
+        confirmationCount: hazard.confirmationCount,
+      }),
+    })
     .where(eq(hazardsTable.id, hazardId))
     .returning();
 

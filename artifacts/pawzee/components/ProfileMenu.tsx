@@ -34,6 +34,11 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
     onClose();
   };
 
+  const handleGuestReset = () => {
+    loginAsGuest();
+    onClose();
+  };
+
   const handleUpgradeToReplit = () => {
     login();
     onClose();
@@ -80,17 +85,24 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
                 <Pressable style={styles.menuItem} onPress={handleUpgradeToReplit}>
                   <Feather name="log-in" size={20} color={Colors.primary} />
                   <Text style={[styles.menuItemText, { color: Colors.primary }]}>
-                    Sign In with Replit
+                    Link Replit Account
                   </Text>
                 </Pressable>
               )}
 
-              <Pressable style={styles.menuItem} onPress={handleLogout}>
-                <Feather name="log-out" size={20} color={Colors.danger} />
-                <Text style={[styles.menuItemText, { color: Colors.danger }]}>
-                  {isGuest ? "Sign Out" : "Log Out"}
-                </Text>
-              </Pressable>
+              {isGuest ? (
+                <Pressable style={styles.menuItem} onPress={handleGuestReset}>
+                  <Feather name="refresh-cw" size={20} color={Colors.textSecondary} />
+                  <Text style={styles.menuItemText}>Start Fresh as Guest</Text>
+                </Pressable>
+              ) : (
+                <Pressable style={styles.menuItem} onPress={handleLogout}>
+                  <Feather name="log-out" size={20} color={Colors.danger} />
+                  <Text style={[styles.menuItemText, { color: Colors.danger }]}>
+                    Log Out
+                  </Text>
+                </Pressable>
+              )}
             </>
           ) : (
             <View style={styles.authActions}>

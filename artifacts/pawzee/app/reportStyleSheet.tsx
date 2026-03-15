@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_400Regular",
     color: Colors.textSecondary,
-    marginBottom: 20,
+    marginBottom: 14,
   },
   categoryGrid: {
     flexDirection: "row",
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   photoActions: {
     flexDirection: "row",
     gap: 16,
-    marginTop: 20,
+    marginTop: 12,
     width: "100%",
   },
   photoActionBtn: {
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   },
   photoPreview: {
     width: "100%",
-    marginTop: 10,
+    marginTop: 12,
     borderRadius: 16,
     overflow: "hidden",
     position: "relative",
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: "center",
     gap: 12,
-    marginTop: 8,
+    marginTop: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 14,
     backgroundColor: Colors.primary,
-    marginTop: 24,
+    marginTop: 12,
   },
   submitBtnDisabled: {
     opacity: 0.6,
