@@ -1,5 +1,8 @@
 import { MaterialCommunityIcons, Ionicons, FontAwesome5, MaterialIcons } from "@expo/vector-icons";
 
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
+
 export type HazardCategory =
   | "broken_glass"
   | "poison_bait"
@@ -19,6 +22,8 @@ export interface HazardIconConfig {
   iconName: string;
   color: string;
   bgColor: string;
+  expiryMs: number;
+  expiryLabel: string;
 }
 
 export const HAZARD_CONFIGS: Record<HazardCategory, HazardIconConfig> = {
@@ -28,6 +33,8 @@ export const HAZARD_CONFIGS: Record<HazardCategory, HazardIconConfig> = {
     iconName: "glass-fragile",
     color: "#DC2626",
     bgColor: "#FEE2E2",
+    expiryMs: 7 * DAY_MS,
+    expiryLabel: "7 days",
   },
   poison_bait: {
     label: "Poison Bait",
@@ -35,6 +42,8 @@ export const HAZARD_CONFIGS: Record<HazardCategory, HazardIconConfig> = {
     iconName: "skull-crossbones",
     color: "#7C3AED",
     bgColor: "#EDE9FE",
+    expiryMs: 14 * DAY_MS,
+    expiryLabel: "14 days",
   },
   aggressive_dog: {
     label: "Aggressive Dog",
@@ -42,6 +51,8 @@ export const HAZARD_CONFIGS: Record<HazardCategory, HazardIconConfig> = {
     iconName: "dog",
     color: "#EA580C",
     bgColor: "#FFF7ED",
+    expiryMs: 6 * HOUR_MS,
+    expiryLabel: "6 hours",
   },
   construction: {
     label: "Construction",
@@ -49,6 +60,8 @@ export const HAZARD_CONFIGS: Record<HazardCategory, HazardIconConfig> = {
     iconName: "hard-hat",
     color: "#D97706",
     bgColor: "#FEF3C7",
+    expiryMs: 14 * DAY_MS,
+    expiryLabel: "14 days",
   },
   spray_activity: {
     label: "Spray Activity",
@@ -56,6 +69,8 @@ export const HAZARD_CONFIGS: Record<HazardCategory, HazardIconConfig> = {
     iconName: "spray",
     color: "#0891B2",
     bgColor: "#CFFAFE",
+    expiryMs: 24 * HOUR_MS,
+    expiryLabel: "24 hours",
   },
   ticks_fleas: {
     label: "Ticks / Fleas",
@@ -63,6 +78,8 @@ export const HAZARD_CONFIGS: Record<HazardCategory, HazardIconConfig> = {
     iconName: "bug",
     color: "#CA8A04",
     bgColor: "#FEF9C3",
+    expiryMs: 14 * DAY_MS,
+    expiryLabel: "14 days",
   },
   stray_animal: {
     label: "Stray Animal",
@@ -70,6 +87,8 @@ export const HAZARD_CONFIGS: Record<HazardCategory, HazardIconConfig> = {
     iconName: "cat",
     color: "#CA8A04",
     bgColor: "#FEF9C3",
+    expiryMs: 48 * HOUR_MS,
+    expiryLabel: "48 hours",
   },
   flooding: {
     label: "Flooding",
@@ -77,6 +96,8 @@ export const HAZARD_CONFIGS: Record<HazardCategory, HazardIconConfig> = {
     iconName: "water",
     color: "#2563EB",
     bgColor: "#DBEAFE",
+    expiryMs: 24 * HOUR_MS,
+    expiryLabel: "24 hours",
   },
   ant_nest: {
     label: "Ant Nest",
@@ -84,6 +105,8 @@ export const HAZARD_CONFIGS: Record<HazardCategory, HazardIconConfig> = {
     iconName: "bug-outline",
     color: "#92400E",
     bgColor: "#FDE68A",
+    expiryMs: 7 * DAY_MS,
+    expiryLabel: "7 days",
   },
   waste: {
     label: "Waste / Poop",
@@ -91,6 +114,8 @@ export const HAZARD_CONFIGS: Record<HazardCategory, HazardIconConfig> = {
     iconName: "emoticon-poop",
     color: "#78350F",
     bgColor: "#FDE68A",
+    expiryMs: 48 * HOUR_MS,
+    expiryLabel: "48 hours",
   },
   other: {
     label: "Other",
@@ -98,6 +123,8 @@ export const HAZARD_CONFIGS: Record<HazardCategory, HazardIconConfig> = {
     iconName: "warning",
     color: "#6B7280",
     bgColor: "#F3F4F6",
+    expiryMs: 3 * DAY_MS,
+    expiryLabel: "3 days",
   },
 };
 

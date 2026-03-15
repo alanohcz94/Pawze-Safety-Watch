@@ -284,7 +284,9 @@ export default function ReportScreen() {
                   size={16}
                   color={Colors.textSecondary}
                 />
-                <Text style={styles.confirmInfoText}>Expires in 10 days</Text>
+                <Text style={styles.confirmInfoText}>
+                  Expires in {config.expiryLabel}
+                </Text>
               </View>
             </View>
           </View>
