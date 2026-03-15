@@ -124,9 +124,16 @@ export default function ProfileScreen() {
     refreshUser,
   } = useAuth();
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [busyAction, setBusyAction] = useState<"logout" | "delete" | null>(null);
+  const [busyAction, setBusyAction] = useState<"logout" | "delete" | null>(
+    null,
+  );
+  const isLoggedIn = !!user && !isGuest;
 
-  const { data: stats = EMPTY_STATS, isLoading, error } = useQuery({
+  const {
+    data: stats = EMPTY_STATS,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: fetchProfileStats,
     enabled: !!user,
@@ -135,9 +142,7 @@ export default function ProfileScreen() {
   const badges = buildBadges(stats);
   const displayName = getDisplayName(user, isGuest);
 
-  const handleImageSelection = async (
-    source: "camera" | "library",
-  ) => {
+  const handleImageSelection = async (source: "camera" | "library") => {
     try {
       if (source === "camera") {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -217,6 +222,10 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = async () => {
+    if (!isLoggedIn) {
+      return;
+    }
+
     try {
       setBusyAction("logout");
       await logout();
@@ -317,7 +326,11 @@ export default function ProfileScreen() {
               {uploadingPhoto ? (
                 <ActivityIndicator size="small" color={Colors.primary} />
               ) : (
-                <Ionicons name="camera-outline" size={18} color={Colors.primary} />
+                <Ionicons
+                  name="camera-outline"
+                  size={18}
+                  color={Colors.primary}
+                />
               )}
               <Text style={styles.editPictureText}>
                 {uploadingPhoto ? "Uploading..." : "Edit Picture"}
@@ -387,24 +400,29 @@ export default function ProfileScreen() {
         </View>
 
         {isGuest && (
-          <Pressable style={[styles.button, styles.primaryButton]} onPress={login}>
+          <Pressable
+            style={[styles.button, styles.primaryButton]}
+            onPress={login}
+          >
             <Ionicons name="link-outline" size={18} color="#FFF" />
             <Text style={styles.primaryButtonText}>Link Account</Text>
           </Pressable>
         )}
 
-        <Pressable
-          style={[styles.button, styles.secondaryButton]}
-          onPress={handleLogout}
-          disabled={busyAction === "logout"}
-        >
-          {busyAction === "logout" ? (
-            <ActivityIndicator size="small" color={Colors.text} />
-          ) : (
-            <Ionicons name="log-out-outline" size={18} color={Colors.text} />
-          )}
-          <Text style={styles.secondaryButtonText}>Logout</Text>
-        </Pressable>
+        {!isGuest && isLoggedIn && (
+          <Pressable
+            style={[styles.button, styles.secondaryButton]}
+            onPress={handleLogout}
+            disabled={busyAction === "logout"}
+          >
+            {busyAction === "logout" ? (
+              <ActivityIndicator size="small" color={Colors.text} />
+            ) : (
+              <Ionicons name="log-out-outline" size={18} color={Colors.text} />
+            )}
+            <Text style={styles.secondaryButtonText}>Logout</Text>
+          </Pressable>
+        )}
 
         <Pressable
           style={[styles.button, styles.dangerButton]}
