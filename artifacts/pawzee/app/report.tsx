@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   Pressable,
   ScrollView,
   Alert,
@@ -17,17 +16,22 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
+import { styles } from "./reportStyleSheet";
 import Colors from "@/constants/colors";
 import { HazardIcon } from "@/components/HazardIcon";
-import { HAZARD_CATEGORIES, HAZARD_CONFIGS, type HazardCategory } from "@/lib/hazards";
+import {
+  HAZARD_CATEGORIES,
+  HAZARD_CONFIGS,
+  type HazardCategory,
+} from "@/lib/hazards";
 import { createHazard, uploadPhoto } from "@/lib/api";
 
 export default function ReportScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
-  const [selectedCategory, setSelectedCategory] = useState<HazardCategory | null>(null);
+  const [selectedCategory, setSelectedCategory] =
+    useState<HazardCategory | null>(null);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -40,7 +44,10 @@ export default function ReportScreen() {
   const handleTakePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission Required", "Camera permission is needed to take photos.");
+      Alert.alert(
+        "Permission Required",
+        "Camera permission is needed to take photos.",
+      );
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -93,7 +100,10 @@ export default function ReportScreen() {
       queryClient.invalidateQueries({ queryKey: ["hazards"] });
       router.back();
     } catch (err: any) {
-      Alert.alert("Error", err.message || "Failed to report hazard. Please try again.");
+      Alert.alert(
+        "Error",
+        err.message || "Failed to report hazard. Please try again.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -102,7 +112,12 @@ export default function ReportScreen() {
   const config = selectedCategory ? HAZARD_CONFIGS[selectedCategory] : null;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 0) }]}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 0) },
+      ]}
+    >
       <View style={styles.header}>
         <Pressable
           style={styles.backBtn}
@@ -123,7 +138,7 @@ export default function ReportScreen() {
       </View>
 
       <View style={styles.steps}>
-        {[1, 2, 3].map((s) => (
+        {[1, 2].map((s) => (
           <View
             key={s}
             style={[
@@ -150,7 +165,8 @@ export default function ReportScreen() {
                   key={category}
                   style={[
                     styles.categoryItem,
-                    selectedCategory === category && styles.categoryItemSelected,
+                    selectedCategory === category &&
+                      styles.categoryItemSelected,
                   ]}
                   onPress={() => handleCategorySelect(category)}
                 >
@@ -163,43 +179,19 @@ export default function ReportScreen() {
         </View>
       )}
 
-      {step === 2 && (
+      {/* {step === 2 && (
         <View style={styles.stepContent}>
           <Text style={styles.stepTitle}>Add a photo</Text>
-          <Text style={styles.stepSubtitle}>Optional: Take or select a photo of the hazard</Text>
+          
 
           {photoUri ? (
-            <View style={styles.photoPreview}>
-              <Image source={{ uri: photoUri }} style={styles.previewImage} contentFit="cover" />
-              <Pressable
-                style={styles.removePhotoBtn}
-                onPress={() => setPhotoUri(null)}
-              >
-                <Ionicons name="close-circle" size={28} color="#FFF" />
-              </Pressable>
-            </View>
+            
           ) : (
-            <View style={styles.photoActions}>
-              <Pressable style={styles.photoActionBtn} onPress={handleTakePhoto}>
-                <View style={styles.photoActionIcon}>
-                  <Ionicons name="camera" size={28} color={Colors.primary} />
-                </View>
-                <Text style={styles.photoActionText}>Take Photo</Text>
-              </Pressable>
-              <Pressable style={styles.photoActionBtn} onPress={handlePickPhoto}>
-                <View style={styles.photoActionIcon}>
-                  <Ionicons name="images" size={28} color={Colors.primary} />
-                </View>
-                <Text style={styles.photoActionText}>From Gallery</Text>
-              </Pressable>
-            </View>
+            
           )}
 
           <View style={styles.navButtons}>
-            <Pressable
-              style={styles.skipBtn}
-              onPress={() => setStep(3)}
-            >
+            <Pressable style={styles.skipBtn} onPress={() => setStep(3)}>
               <Text style={styles.skipBtnText}>
                 {photoUri ? "Next" : "Skip"}
               </Text>
@@ -207,9 +199,9 @@ export default function ReportScreen() {
             </Pressable>
           </View>
         </View>
-      )}
+      )} */}
 
-      {step === 3 && config && (
+      {step === 2 && config && (
         <View style={styles.stepContent}>
           <Text style={styles.stepTitle}>Review & submit</Text>
           <Text style={styles.stepSubtitle}>
@@ -220,32 +212,75 @@ export default function ReportScreen() {
             <HazardIcon category={selectedCategory!} size={56} />
             <Text style={styles.confirmCategory}>{config.label}</Text>
 
+            {/* Add photo from gallery or camera */}
+            <Text style={styles.stepSubtitle}>
+              Optional: Take or select a photo of the hazard
+            </Text>
+            <View style={styles.photoActions}>
+              <Pressable
+                style={styles.photoActionBtn}
+                onPress={handleTakePhoto}
+              >
+                <View style={styles.photoActionIcon}>
+                  <Ionicons name="camera" size={28} color={Colors.primary} />
+                </View>
+                <Text style={styles.photoActionText}>Take Photo</Text>
+              </Pressable>
+              <Pressable
+                style={styles.photoActionBtn}
+                onPress={handlePickPhoto}
+              >
+                <View style={styles.photoActionIcon}>
+                  <Ionicons name="images" size={28} color={Colors.primary} />
+                </View>
+                <Text style={styles.photoActionText}>From Gallery</Text>
+              </Pressable>
+            </View>
+
             {photoUri && (
-              <Image
-                source={{ uri: photoUri }}
-                style={styles.confirmPhoto}
-                contentFit="cover"
-              />
+              <View style={styles.photoPreview}>
+                <Image
+                  source={{ uri: photoUri }}
+                  style={styles.confirmPhoto}
+                  contentFit="cover"
+                />
+                <Pressable
+                  style={styles.removePhotoBtn}
+                  onPress={() => setPhotoUri(null)}
+                >
+                  <Ionicons name="close-circle" size={28} color="#FFF" />
+                </Pressable>
+              </View>
             )}
 
             <View style={styles.confirmInfo}>
               <View style={styles.confirmInfoRow}>
-                <Ionicons name="location" size={16} color={Colors.textSecondary} />
+                <Ionicons
+                  name="location"
+                  size={16}
+                  color={Colors.textSecondary}
+                />
                 <Text style={styles.confirmInfoText} numberOfLines={1}>
                   Current GPS location
                 </Text>
               </View>
               <View style={styles.confirmInfoRow}>
-                <Ionicons name="camera-outline" size={16} color={Colors.textSecondary} />
+                <Ionicons
+                  name="camera-outline"
+                  size={16}
+                  color={Colors.textSecondary}
+                />
                 <Text style={styles.confirmInfoText}>
                   {photoUri ? "Photo attached" : "No photo"}
                 </Text>
               </View>
               <View style={styles.confirmInfoRow}>
-                <Ionicons name="timer-outline" size={16} color={Colors.textSecondary} />
-                <Text style={styles.confirmInfoText}>
-                  Expires in 10 days
-                </Text>
+                <Ionicons
+                  name="timer-outline"
+                  size={16}
+                  color={Colors.textSecondary}
+                />
+                <Text style={styles.confirmInfoText}>Expires in 10 days</Text>
               </View>
             </View>
           </View>
@@ -269,224 +304,3 @@ export default function ReportScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.surfaceSecondary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 17,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.text,
-  },
-  closeBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.surfaceSecondary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  steps: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 12,
-  },
-  stepDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.border,
-  },
-  stepDotActive: {
-    backgroundColor: Colors.primaryLight,
-    width: 8,
-  },
-  stepDotCurrent: {
-    backgroundColor: Colors.primary,
-    width: 24,
-    borderRadius: 4,
-  },
-  stepContent: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  stepTitle: {
-    fontSize: 24,
-    fontFamily: "Inter_700Bold",
-    color: Colors.text,
-    marginBottom: 4,
-  },
-  stepSubtitle: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textSecondary,
-    marginBottom: 20,
-  },
-  categoryGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-    paddingBottom: 40,
-  },
-  categoryItem: {
-    width: "30%",
-    aspectRatio: 1,
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderWidth: 2,
-    borderColor: "transparent",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  categoryItemSelected: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primaryLight,
-  },
-  categoryLabel: {
-    fontSize: 11,
-    fontFamily: "Inter_500Medium",
-    color: Colors.text,
-    textAlign: "center",
-    paddingHorizontal: 4,
-  },
-  photoActions: {
-    flexDirection: "row",
-    gap: 16,
-    marginTop: 20,
-  },
-  photoActionBtn: {
-    flex: 1,
-    alignItems: "center",
-    gap: 12,
-  },
-  photoActionIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    backgroundColor: Colors.primaryLight,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  photoActionText: {
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
-    color: Colors.text,
-  },
-  photoPreview: {
-    marginTop: 20,
-    borderRadius: 16,
-    overflow: "hidden",
-    position: "relative",
-  },
-  previewImage: {
-    width: "100%",
-    height: 240,
-    borderRadius: 16,
-  },
-  removePhotoBtn: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-  },
-  navButtons: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginTop: 24,
-  },
-  skipBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    backgroundColor: Colors.primaryLight,
-  },
-  skipBtnText: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.primary,
-  },
-  confirmCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 20,
-    padding: 24,
-    alignItems: "center",
-    gap: 12,
-    marginTop: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  confirmCategory: {
-    fontSize: 20,
-    fontFamily: "Inter_700Bold",
-    color: Colors.text,
-  },
-  confirmPhoto: {
-    width: "100%",
-    height: 160,
-    borderRadius: 12,
-  },
-  confirmInfo: {
-    width: "100%",
-    gap: 8,
-    marginTop: 4,
-  },
-  confirmInfoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  confirmInfoText: {
-    flex: 1,
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textSecondary,
-  },
-  submitBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 16,
-    borderRadius: 14,
-    backgroundColor: Colors.primary,
-    marginTop: 24,
-  },
-  submitBtnDisabled: {
-    opacity: 0.6,
-  },
-  submitBtnText: {
-    fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
-    color: "#FFF",
-  },
-});
