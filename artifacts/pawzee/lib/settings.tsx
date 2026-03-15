@@ -6,6 +6,7 @@ const STORAGE_KEY = "pawzee_settings";
 interface Settings {
   notifications: boolean;
   alertRadius: number;
+  audioReport: boolean;
   stepCounter: boolean;
 }
 
@@ -16,6 +17,7 @@ interface SettingsContextValue extends Settings {
 const DEFAULT_SETTINGS: Settings = {
   notifications: true,
   alertRadius: 3,
+  audioReport: false,
   stepCounter: false,
 };
 

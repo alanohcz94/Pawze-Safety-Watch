@@ -10,7 +10,6 @@ import {
   Linking,
   Platform,
   Animated,
-  Dimensions,
 } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons, Feather } from "@expo/vector-icons";
@@ -315,7 +314,7 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
                             <Text style={[styles.settingLabel, { color: Colors.textTertiary }]}>
                               Audio Report
                             </Text>
-                            <Text style={styles.comingSoon}>(Coming Soon)</Text>
+                            <Text style={styles.comingSoon}>(Next Release)</Text>
                           </View>
                         </View>
                         <Switch
