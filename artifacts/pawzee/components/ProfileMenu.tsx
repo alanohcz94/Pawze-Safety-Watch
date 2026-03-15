@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   TextInput,
   Linking,
   Platform,
+  Animated,
+  Dimensions,
 } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons, Feather } from "@expo/vector-icons";
@@ -20,6 +22,7 @@ import { useSettings } from "@/lib/settings";
 import { styles } from "./componentStyleSheet/StyleSheetProfileMenu";
 
 const RADIUS_OPTIONS = [1, 3, 5, 10, 15];
+const DRAWER_WIDTH = 300;
 
 interface ProfileMenuProps {
   visible: boolean;
@@ -34,7 +37,45 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [showSupportForm, setShowSupportForm] = useState(false);
+  const [supportSubject, setSupportSubject] = useState("Pawzee Support");
   const [supportMessage, setSupportMessage] = useState("");
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
+  const backdropAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      setModalVisible(true);
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(backdropAnim, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: -DRAWER_WIDTH,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(backdropAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setModalVisible(false);
+      });
+    }
+  }, [visible]);
 
   const displayName = isGuest
     ? "Guest Pawzer"
@@ -68,9 +109,10 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
   };
 
   const handleSendSupport = () => {
-    const subject = encodeURIComponent("Pawzee Support");
+    const subject = encodeURIComponent(supportSubject.trim() || "Pawzee Support");
     const body = encodeURIComponent(supportMessage.trim());
     Linking.openURL(`mailto:supportPawject@gmail.com?subject=${subject}&body=${body}`);
+    setSupportSubject("Pawzee Support");
     setSupportMessage("");
     setShowSupportForm(false);
   };
@@ -89,6 +131,16 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
             Send feedback or report an issue to the Pawzee team.
           </Text>
 
+          <Text style={styles.supportFieldLabel}>Subject</Text>
+          <TextInput
+            style={styles.supportSubjectInput}
+            placeholder="Subject"
+            placeholderTextColor={Colors.textTertiary}
+            value={supportSubject}
+            onChangeText={setSupportSubject}
+          />
+
+          <Text style={styles.supportFieldLabel}>Message</Text>
           <TextInput
             style={styles.supportInput}
             placeholder="Describe your issue or feedback..."
@@ -104,6 +156,7 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
             <Pressable
               style={styles.supportCancelBtn}
               onPress={() => {
+                setSupportSubject("Pawzee Support");
                 setSupportMessage("");
                 setShowSupportForm(false);
               }}
@@ -129,12 +182,15 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
 
   return (
     <>
-      <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
+      <Modal visible={modalVisible} animationType="none" transparent onRequestClose={onClose}>
         <View style={styles.overlay}>
-          <View
+          <Animated.View
             style={[
               styles.drawer,
-              { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16) },
+              {
+                paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16),
+                transform: [{ translateX: slideAnim }],
+              },
             ]}
           >
             <ScrollView
@@ -259,14 +315,15 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
                             <Text style={[styles.settingLabel, { color: Colors.textTertiary }]}>
                               Audio Report
                             </Text>
-                            <Text style={styles.comingSoon}>Next Release</Text>
+                            <Text style={styles.comingSoon}>(Coming Soon)</Text>
                           </View>
                         </View>
                         <Switch
-                          value={false}
+                          value={true}
                           disabled
-                          trackColor={{ false: Colors.border, true: Colors.border }}
-                          thumbColor={Colors.textTertiary}
+                          trackColor={{ false: Colors.border, true: Colors.primaryLight }}
+                          thumbColor={Colors.primary}
+                          style={{ opacity: 0.5 }}
                         />
                       </View>
 
@@ -308,19 +365,10 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
                         style={styles.menuItem}
                         onPress={() => setShowSupportForm(true)}
                       >
-                        <Ionicons name="chatbubble-ellipses-outline" size={18} color={Colors.primary} />
+                        <Ionicons name="help-circle-outline" size={18} color={Colors.primary} />
                         <Text style={[styles.menuItemText, { color: Colors.primary }]}>
-                          Send Feedback
+                          Get Support
                         </Text>
-                      </Pressable>
-                      <Pressable
-                        style={styles.menuItem}
-                        onPress={() =>
-                          Linking.openURL("mailto:supportPawject@gmail.com?subject=Pawzee%20Support")
-                        }
-                      >
-                        <Ionicons name="mail-outline" size={18} color={Colors.text} />
-                        <Text style={styles.menuItemText}>Email Support</Text>
                       </Pressable>
                     </View>
                   )}
@@ -361,9 +409,11 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
             <Pressable style={styles.closeBtn} onPress={onClose}>
               <Ionicons name="close" size={22} color={Colors.text} />
             </Pressable>
-          </View>
+          </Animated.View>
 
-          <Pressable style={styles.backdrop} onPress={onClose} />
+          <Animated.View style={[styles.backdrop, { opacity: backdropAnim }]}>
+            <Pressable style={styles.backdropTouchable} onPress={onClose} />
+          </Animated.View>
         </View>
       </Modal>
 

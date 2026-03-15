@@ -23,6 +23,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.overlay,
   },
+  backdropTouchable: {
+    flex: 1,
+  },
   closeBtn: {
     position: "absolute",
     top: 54,
@@ -222,6 +225,23 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     color: Colors.textSecondary,
     marginBottom: 16,
+  },
+  supportFieldLabel: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.textSecondary,
+    marginBottom: 6,
+  },
+  supportSubjectInput: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: Colors.text,
+    backgroundColor: Colors.surfaceSecondary,
+    marginBottom: 12,
   },
   supportInput: {
     borderWidth: 1,
