@@ -19,15 +19,25 @@ import {
   formatTimeAgo,
   formatTimeRemaining,
   formatDistance,
-  haversineDistance,
   type HazardCategory,
 } from "@/lib/hazards";
 import type { HazardItem } from "@/lib/api";
 import { confirmHazard, updateHazardPhoto, uploadPhoto } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import {
+  buildHazardNavigationUrl,
+  getHazardDetailSheetState,
+} from "../lib/hazardDetailSheet";
 import { styles } from "./componentStyleSheet/StyleSheetHazardDetailSheet";
 
 type SheetView = "sheet" | "photo";
+type PhotoSource = "camera" | "library";
+
+const IMAGE_PICKER_OPTIONS = {
+  quality: 0.7,
+  allowsEditing: true,
+  aspect: [4, 3] as [number, number],
+};
 
 interface HazardDetailSheetProps {
   hazard: HazardItem | null;
@@ -65,13 +75,12 @@ export function HazardDetailSheet({
 
   const config =
     HAZARD_CONFIGS[hazard.category as HazardCategory] || HAZARD_CONFIGS.other;
-  const distance =
-    userLat != null && userLng != null
-      ? haversineDistance(userLat, userLng, hazard.lat, hazard.lng)
-      : null;
-
-  const canConfirm = distance != null && distance <= 10;
-  const alreadyConfirmed = hazard.userHasConfirmed;
+  const sheetState = getHazardDetailSheetState({
+    hazard,
+    userLat,
+    userLng,
+  });
+  const { alreadyConfirmed, distance } = sheetState;
 
   const handleConfirmPress = async () => {
     if (!isAuthenticated) {
@@ -113,23 +122,76 @@ export function HazardDetailSheet({
     }
   };
 
-  const handleEditPhoto = async () => {
+  const choosePhotoSource = () =>
+    new Promise<PhotoSource | null>((resolve) => {
+      let settled = false;
+      const finish = (source: PhotoSource | null) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        resolve(source);
+      };
+
+      Alert.alert(
+        hazard.photoUrl ? "Update Photo" : "Add Photo",
+        "Choose a photo source.",
+        [
+          { text: "Take Photo", onPress: () => finish("camera") },
+          { text: "From Gallery", onPress: () => finish("library") },
+          { text: "Cancel", style: "cancel", onPress: () => finish(null) },
+        ],
+        {
+          cancelable: true,
+          onDismiss: () => finish(null),
+        },
+      );
+    });
+
+  const pickPhoto = async (source: PhotoSource) => {
+    if (source === "camera") {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Required",
+          "Camera permission is needed to take photos.",
+        );
+        return null;
+      }
+
+      return ImagePicker.launchCameraAsync(IMAGE_PICKER_OPTIONS);
+    }
+
+    return ImagePicker.launchImageLibraryAsync(IMAGE_PICKER_OPTIONS);
+  };
+
+  const handlePhotoAction = async () => {
+    if (!isAuthenticated) {
+      Alert.alert("Login Required", "Please log in to update hazard photos.", [
+        { text: "Cancel" },
+        { text: "Log In", onPress: login },
+      ]);
+      return;
+    }
+
     if (!alreadyConfirmed) {
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      quality: 0.7,
-      allowsEditing: true,
-      aspect: [4, 3],
-    });
+    const source = await choosePhotoSource();
+    if (!source) {
+      return;
+    }
 
-    if (result.canceled || !result.assets[0]) {
+    const result = await pickPhoto(source);
+
+    if (!result || result.canceled || !result.assets[0]) {
       return;
     }
 
     setUpdatingPhoto(true);
     try {
+      const hadPhoto = Boolean(hazard.photoUrl);
       const photoUrl = await uploadPhoto(result.assets[0].uri);
       const updated = await updateHazardPhoto(hazard.id, photoUrl);
       const nextHazard = {
@@ -140,8 +202,8 @@ export function HazardDetailSheet({
       onHazardUpdated(nextHazard);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert(
-        hazard.photoUrl ? "Photo Updated" : "Photo Added",
-        hazard.photoUrl
+        hadPhoto ? "Photo Updated" : "Photo Added",
+        hadPhoto
           ? "The hazard photo has been updated."
           : "A photo has been added to this hazard.",
       );
@@ -157,8 +219,7 @@ export function HazardDetailSheet({
   };
 
   const handleNavigate = () => {
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${hazard.lat},${hazard.lng}`;
-    Linking.openURL(url);
+    Linking.openURL(buildHazardNavigationUrl(hazard.lat, hazard.lng));
   };
 
   const handleClose = () => {
@@ -172,13 +233,66 @@ export function HazardDetailSheet({
       <View style={styles.sheet}>
         <View style={styles.grabber} />
 
-        {hazard.photoUrl && (
-          <Pressable onPress={() => setCurrentView("photo")}>
-            <Image
-              source={{ uri: hazard.photoUrl }}
-              style={styles.photo}
-              contentFit="cover"
-            />
+        {sheetState.showPhotoPreview && (
+          <View style={styles.photoCard}>
+            <Pressable
+              style={styles.photoPreviewBtn}
+              onPress={() => setCurrentView("photo")}
+            >
+              <Image
+                source={{ uri: hazard.photoUrl! }}
+                style={styles.photo}
+                contentFit="cover"
+              />
+              <View style={styles.photoPreviewHint}>
+                <Ionicons name="expand-outline" size={16} color="#FFF" />
+                <Text style={styles.photoPreviewHintText}>View Photo</Text>
+              </View>
+            </Pressable>
+
+            {sheetState.showEditPhotoOverlay && (
+              <Pressable
+                style={[
+                  styles.photoEditIconBtn,
+                  updatingPhoto && styles.photoActionDisabled,
+                ]}
+                onPress={handlePhotoAction}
+                disabled={updatingPhoto}
+              >
+                {updatingPhoto ? (
+                  <ActivityIndicator size="small" color={Colors.primary} />
+                ) : (
+                  <Ionicons name="create-outline" size={18} color={Colors.primary} />
+                )}
+              </Pressable>
+            )}
+          </View>
+        )}
+
+        {sheetState.showAddPhotoCard && (
+          <Pressable
+            style={[
+              styles.photoPlaceholder,
+              updatingPhoto && styles.photoActionDisabled,
+            ]}
+            onPress={handlePhotoAction}
+            disabled={updatingPhoto}
+          >
+            {updatingPhoto ? (
+              <ActivityIndicator size="small" color={Colors.primary} />
+            ) : (
+              <>
+                <View style={styles.photoPlaceholderIcon}>
+                  <Ionicons name="camera-outline" size={24} color={Colors.primary} />
+                </View>
+                <Text style={styles.photoPlaceholderTitle}>
+                  {sheetState.photoActionLabel}
+                </Text>
+                <Text style={styles.photoPlaceholderSubtitle}>
+                  Take a photo or choose one from the gallery.
+                </Text>
+              </>
+            )}
           </Pressable>
         )}
 
@@ -247,7 +361,7 @@ export function HazardDetailSheet({
             <Text style={styles.actionBtnTextLight}>Navigate</Text>
           </Pressable>
 
-          {hazard.photoUrl && (
+          {sheetState.showViewPhotoButton && (
             <Pressable
               style={[styles.actionBtn, styles.photoBtn]}
               onPress={() => setCurrentView("photo")}
@@ -262,33 +376,7 @@ export function HazardDetailSheet({
           )}
         </View>
 
-        {alreadyConfirmed && (
-          <Pressable
-            style={[
-              styles.editPhotoBtn,
-              updatingPhoto && styles.confirmBtnDisabled,
-            ]}
-            onPress={handleEditPhoto}
-            disabled={updatingPhoto}
-          >
-            {updatingPhoto ? (
-              <ActivityIndicator size="small" color={Colors.primary} />
-            ) : (
-              <>
-                <Ionicons
-                  name={hazard.photoUrl ? "create-outline" : "camera-outline"}
-                  size={20}
-                  color={Colors.primary}
-                />
-                <Text style={styles.editPhotoBtnText}>
-                  {hazard.photoUrl ? "Edit Photo" : "Add Photo"}
-                </Text>
-              </>
-            )}
-          </Pressable>
-        )}
-
-        {alreadyConfirmed ? (
+        {sheetState.showAlreadyConfirmedButton ? (
           <Pressable
             style={[styles.confirmBtn, styles.confirmBtnDisabled]}
             disabled
@@ -296,7 +384,7 @@ export function HazardDetailSheet({
             <Ionicons name="checkmark-circle" size={20} color="#FFF" />
             <Text style={styles.confirmBtnText}>Already Confirmed</Text>
           </Pressable>
-        ) : canConfirm ? (
+        ) : sheetState.showConfirmButton ? (
           <Pressable
             style={[styles.confirmBtn, confirming && styles.confirmBtnDisabled]}
             onPress={handleConfirmPress}
@@ -311,7 +399,7 @@ export function HazardDetailSheet({
               </>
             )}
           </Pressable>
-        ) : distance != null ? (
+        ) : sheetState.showTooFarMessage ? (
           <Text style={styles.tooFarText}>
             Move within 10m to confirm this hazard
           </Text>
