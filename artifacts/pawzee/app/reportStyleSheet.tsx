@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   },
   photoPreview: {
     width: "100%",
-    marginTop: 20,
+    marginTop: 10,
     borderRadius: 16,
     overflow: "hidden",
     position: "relative",
