@@ -5,7 +5,7 @@ import type {
   ConfirmHazardRequest,
 } from "@workspace/api-zod";
 import { eq, and, gte, sql, inArray } from "drizzle-orm";
-import { calculateHazardExpiry } from "../lib/hazardExpiry";
+import { calculateHazardExpiry } from "../lib/hazard";
 
 const router: IRouter = Router();
 
