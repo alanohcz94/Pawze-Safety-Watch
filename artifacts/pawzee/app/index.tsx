@@ -32,6 +32,7 @@ import { SearchBar, type SearchResult } from "@/components/SearchBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { EmergencyVetSheet } from "@/components/EmergencyVetSheet";
 import { SafetySummaryOverlay } from "@/components/SafetySummary";
+import { useSettings } from "@/lib/settings";
 
 function clusterHazards(
   hazards: HazardItem[],
@@ -86,6 +87,8 @@ export default function MapScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const mapRef = useRef<MapView>(null);
+  const { alertRadius } = useSettings();
+  const alertRadiusMeters = alertRadius * 1000;
 
   const [region, setRegion] = useState<Region>(DEFAULT_REGION);
   const [userLocation, setUserLocation] = useState<{
@@ -113,8 +116,8 @@ export default function MapScreen() {
     queryCenter?.lng ?? userLocation?.lng ?? DEFAULT_REGION.longitude;
 
   const { data: hazards = [], refetch: refetchHazards } = useQuery({
-    queryKey: ["hazards", centerLat, centerLng],
-    queryFn: () => fetchHazards(centerLat, centerLng, 3000),
+    queryKey: ["hazards", centerLat, centerLng, alertRadiusMeters],
+    queryFn: () => fetchHazards(centerLat, centerLng, alertRadiusMeters),
     refetchInterval: 30000,
   });
 
@@ -184,7 +187,7 @@ export default function MapScreen() {
   const handleHazardUpdated = (updatedHazard: HazardItem) => {
     setSelectedHazard(updatedHazard);
     queryClient.setQueryData<HazardItem[]>(
-      ["hazards", centerLat, centerLng],
+      ["hazards", centerLat, centerLng, alertRadiusMeters],
       (current = []) =>
         current.map((hazard) =>
           hazard.id === updatedHazard.id ? updatedHazard : hazard,
@@ -215,7 +218,7 @@ export default function MapScreen() {
       setSearchLocation(label);
       setQueryCenter({ lat: latitude, lng: longitude });
 
-      const summaryData = await fetchHazardSummary(latitude, longitude, 3000);
+      const summaryData = await fetchHazardSummary(latitude, longitude, alertRadiusMeters);
       setSummary(summaryData);
       setShowSummary(true);
     } catch {

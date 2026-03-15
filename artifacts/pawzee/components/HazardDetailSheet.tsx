@@ -23,6 +23,7 @@ import {
 } from "@/lib/hazards";
 import type { HazardItem } from "@/lib/api";
 import { confirmHazard, updateHazardPhoto, uploadPhoto } from "@/lib/api";
+import { prepareImage } from "@/lib/images";
 import { useAuth } from "@/lib/auth";
 import {
   buildHazardNavigationUrl,
@@ -192,7 +193,8 @@ export function HazardDetailSheet({
     setUpdatingPhoto(true);
     try {
       const hadPhoto = Boolean(hazard.photoUrl);
-      const photoUrl = await uploadPhoto(result.assets[0].uri);
+      const prepared = await prepareImage(result.assets[0].uri);
+      const photoUrl = await uploadPhoto(prepared);
       const updated = await updateHazardPhoto(hazard.id, photoUrl);
       const nextHazard = {
         ...hazard,

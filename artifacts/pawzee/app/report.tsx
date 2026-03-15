@@ -25,6 +25,7 @@ import {
   type HazardCategory,
 } from "@/lib/hazards";
 import { createHazard, uploadPhoto } from "@/lib/api";
+import { prepareImage } from "@/lib/images";
 
 export default function ReportScreen() {
   const insets = useSafeAreaInsets();
@@ -83,7 +84,8 @@ export default function ReportScreen() {
       let uploadedPhotoUrl: string | null = null;
       if (photoUri) {
         try {
-          uploadedPhotoUrl = await uploadPhoto(photoUri);
+          const prepared = await prepareImage(photoUri);
+          uploadedPhotoUrl = await uploadPhoto(prepared);
         } catch {
           uploadedPhotoUrl = null;
         }
