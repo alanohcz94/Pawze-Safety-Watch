@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   },
   bottomControls: {
     position: "absolute",
-    bottom: "25%",
+    bottom: "15%",
     left: 0,
     right: 0,
     paddingHorizontal: 16,
