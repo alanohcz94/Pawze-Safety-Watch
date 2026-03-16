@@ -3,7 +3,6 @@ import {
   View,
   Text,
   Pressable,
-  Alert,
   Platform,
   ActivityIndicator,
 } from "react-native";
@@ -38,7 +37,7 @@ import { HazardDetailSheet } from "@/components/HazardDetailSheet";
 import { SearchBar, type SearchResult } from "@/components/SearchBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { EmergencyVetSheet } from "@/components/EmergencyVetSheet";
-import { SafetySummaryOverlay } from "@/components/SafetySummary";
+import { SafetySummaryDashboard } from "@/components/SafetySummary";
 import { useSettings } from "@/lib/settings";
 
 function clusterHazards(
@@ -90,6 +89,42 @@ function getZoomLevel(latDelta: number): number {
   return Math.round(Math.log2(360 / latDelta));
 }
 
+function formatAreaName(
+  address: Location.LocationGeocodedAddress | null | undefined,
+  fallback: string,
+): string {
+  if (!address) {
+    return fallback;
+  }
+
+  const parts = [
+    address.name,
+    address.street,
+    address.district,
+    address.city,
+    address.region,
+  ].filter(Boolean);
+
+  return parts.slice(0, 2).join(", ") || parts[0] || fallback;
+}
+
+async function resolveAreaName(
+  lat: number,
+  lng: number,
+  fallback: string,
+): Promise<string> {
+  try {
+    const reverse = await Location.reverseGeocodeAsync({
+      latitude: lat,
+      longitude: lng,
+    });
+
+    return formatAreaName(reverse[0], fallback);
+  } catch {
+    return fallback;
+  }
+}
+
 export default function MapScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
@@ -107,9 +142,7 @@ export default function MapScreen() {
   const [showDetail, setShowDetail] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showVet, setShowVet] = useState(false);
-  const [showSummary, setShowSummary] = useState(false);
   const [searchLocation, setSearchLocation] = useState<string>("");
-  const [summary, setSummary] = useState<HazardSummary | null>(null);
   const [zoomLevel, setZoomLevel] = useState(15);
   const [todaySteps, setTodaySteps] = useState(0);
   const [showStepCounter, setShowStepCounter] = useState(false);
@@ -117,6 +150,16 @@ export default function MapScreen() {
   const [stepCounterDayKey, setStepCounterDayKey] = useState(() =>
     new Date().toDateString(),
   );
+  const [currentAreaSummary, setCurrentAreaSummary] =
+    useState<HazardSummary | null>(null);
+  const [currentAreaName, setCurrentAreaName] = useState("Current area");
+  const [loadingCurrentAreaSummary, setLoadingCurrentAreaSummary] =
+    useState(false);
+  const [searchedAreaSummary, setSearchedAreaSummary] =
+    useState<HazardSummary | null>(null);
+  const [searchedAreaName, setSearchedAreaName] = useState("");
+  const [loadingSearchedAreaSummary, setLoadingSearchedAreaSummary] =
+    useState(false);
 
   const [queryCenter, setQueryCenter] = useState<{
     lat: number;
@@ -265,6 +308,95 @@ export default function MapScreen() {
     };
   }, [stepCounter, stepCounterDayKey]);
 
+  useEffect(() => {
+    if (!locationReady) {
+      return;
+    }
+
+    const lat = userLocation?.lat ?? DEFAULT_REGION.latitude;
+    const lng = userLocation?.lng ?? DEFAULT_REGION.longitude;
+    let isActive = true;
+
+    const loadCurrentAreaSummary = async () => {
+      setLoadingCurrentAreaSummary(true);
+
+      try {
+        const [summaryData, locationName] = await Promise.all([
+          fetchHazardSummary(lat, lng, alertRadiusMeters),
+          resolveAreaName(lat, lng, "Current area"),
+        ]);
+
+        if (!isActive) {
+          return;
+        }
+
+        setCurrentAreaSummary(summaryData);
+        setCurrentAreaName(locationName);
+      } catch {
+        if (!isActive) {
+          return;
+        }
+
+        setCurrentAreaSummary(null);
+        setCurrentAreaName("Current area");
+      } finally {
+        if (isActive) {
+          setLoadingCurrentAreaSummary(false);
+        }
+      }
+    };
+
+    loadCurrentAreaSummary();
+
+    return () => {
+      isActive = false;
+    };
+  }, [locationReady, userLocation?.lat, userLocation?.lng, alertRadiusMeters]);
+
+  useEffect(() => {
+    if (!queryCenter) {
+      setSearchedAreaSummary(null);
+      setLoadingSearchedAreaSummary(false);
+      return;
+    }
+
+    let isActive = true;
+
+    const loadSearchedAreaSummary = async () => {
+      setLoadingSearchedAreaSummary(true);
+
+      try {
+        const summaryData = await fetchHazardSummary(
+          queryCenter.lat,
+          queryCenter.lng,
+          alertRadiusMeters,
+        );
+
+        if (!isActive) {
+          return;
+        }
+
+        setSearchedAreaSummary(summaryData);
+      } catch {
+        if (!isActive) {
+          return;
+        }
+
+        setSearchedAreaSummary(null);
+      } finally {
+        if (isActive) {
+          setLoadingSearchedAreaSummary(false);
+        }
+      }
+    };
+
+    loadSearchedAreaSummary();
+
+    return () => {
+      isActive = false;
+    };
+  }, [queryCenter?.lat, queryCenter?.lng, alertRadiusMeters]);
+
   const clusters = clusterHazards(hazards, zoomLevel);
 
   const handleRegionChange = useCallback((newRegion: Region) => {
@@ -300,28 +432,18 @@ export default function MapScreen() {
   };
 
   const handleSearch = async (result: SearchResult) => {
-    try {
-      const { latitude, longitude, label } = result;
-      const newRegion: Region = {
-        latitude,
-        longitude,
-        latitudeDelta: 0.02,
-        longitudeDelta: 0.02,
-      };
-      mapRef.current?.animateToRegion(newRegion, 600);
-      setSearchLocation(label);
-      setQueryCenter({ lat: latitude, lng: longitude });
+    const { latitude, longitude, label } = result;
+    const newRegion: Region = {
+      latitude,
+      longitude,
+      latitudeDelta: 0.02,
+      longitudeDelta: 0.02,
+    };
 
-      const summaryData = await fetchHazardSummary(
-        latitude,
-        longitude,
-        alertRadiusMeters,
-      );
-      setSummary(summaryData);
-      setShowSummary(true);
-    } catch {
-      Alert.alert("Search Error", "Failed to search for location.");
-    }
+    mapRef.current?.animateToRegion(newRegion, 600);
+    setSearchLocation(label);
+    setSearchedAreaName(label);
+    setQueryCenter({ lat: latitude, lng: longitude });
   };
 
   const handleReportPress = () => {
@@ -345,15 +467,26 @@ export default function MapScreen() {
         longitudeDelta: 0.01,
       };
       mapRef.current?.animateToRegion(newRegion, 500);
-      setSearchLocation("");
-      setQueryCenter(null);
-      setSummary(null);
-      setShowSummary(false);
     }
+
+    setSearchLocation("");
+    setSearchedAreaName("");
+    setSearchedAreaSummary(null);
+    setQueryCenter(null);
   };
 
   const showStepCounterChip =
     stepCounter && (loadingStepCounter || showStepCounter);
+  const showingSearchArea = Boolean(queryCenter);
+  const activeAreaName = showingSearchArea
+    ? searchedAreaName || "Searched area"
+    : currentAreaName;
+  const activeAreaSummary = showingSearchArea
+    ? searchedAreaSummary
+    : currentAreaSummary;
+  const activeAreaSummaryLoading = showingSearchArea
+    ? loadingSearchedAreaSummary
+    : loadingCurrentAreaSummary;
 
   if (!locationReady) {
     return (
@@ -376,7 +509,7 @@ export default function MapScreen() {
         showsCompass={false}
         mapPadding={{
           top: insets.top + 72,
-          bottom: insets.bottom + 148,
+          bottom: insets.bottom + 240,
           left: 0,
           right: 0,
         }}
@@ -436,23 +569,6 @@ export default function MapScreen() {
         </View>
       )}
 
-      {/* Safety Summary Overlay */}
-      {showSummary && (
-        <View
-          style={[
-            styles.summaryContainer,
-            { top: insets.top + (Platform.OS === "web" ? 120 : 70) },
-          ]}
-        >
-          <SafetySummaryOverlay
-            summary={summary}
-            visible={showSummary}
-            onClose={() => setShowSummary(false)}
-            locationName={searchLocation}
-          />
-        </View>
-      )}
-
       {/* Bottom Controls */}
       <View
         style={[
@@ -463,29 +579,41 @@ export default function MapScreen() {
           },
         ]}
       >
-        {/* Emergency Vet - Bottom Left */}
-        <Pressable style={styles.emergencyBtn} onPress={handleVetPress}>
-          <MaterialCommunityIcons
-            name="hospital-building"
-            size={22}
-            color="#FFF"
-          />
-        </Pressable>
+        <View style={styles.bottomControlRow}>
+          {/* Emergency Vet - Bottom Left */}
+          <Pressable style={styles.emergencyBtn} onPress={handleVetPress}>
+            <MaterialCommunityIcons
+              name="hospital-building"
+              size={22}
+              color="#FFF"
+            />
+          </Pressable>
 
-        {/* Search Bar - Bottom Center */}
-        <View style={styles.searchContainer}>
-          <SearchBar
-            onSearch={handleSearch}
-            displayText={searchLocation}
-            onRecenter={handleRecenter}
-            recenterDisabled={!userLocation}
-          />
+          {/* Search Bar - Bottom Center */}
+          <View style={styles.searchContainer}>
+            <SearchBar
+              onSearch={handleSearch}
+              displayText={searchLocation}
+              onRecenter={handleRecenter}
+              recenterDisabled={!userLocation}
+            />
+          </View>
+
+          {/* Report Hazard - Bottom Right */}
+          <Pressable style={styles.reportBtn} onPress={handleReportPress}>
+            <Ionicons name="warning" size={22} color="#FFF" />
+          </Pressable>
         </View>
 
-        {/* Report Hazard - Bottom Right */}
-        <Pressable style={styles.reportBtn} onPress={handleReportPress}>
-          <Ionicons name="warning" size={22} color="#FFF" />
-        </Pressable>
+        <View style={styles.dashboardContainer}>
+          <SafetySummaryDashboard
+            summary={activeAreaSummary}
+            locationName={activeAreaName}
+            loading={activeAreaSummaryLoading}
+            showingSearchLocation={showingSearchArea}
+            onBackToCurrentLocation={handleRecenter}
+          />
+        </View>
       </View>
 
       {/* Sheets */}

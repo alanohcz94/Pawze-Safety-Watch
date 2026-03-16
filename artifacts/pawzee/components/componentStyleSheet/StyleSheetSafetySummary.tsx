@@ -3,9 +3,9 @@ import Colors from "@/constants/colors";
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: Colors.mapOverlay,
+    borderRadius: 20,
+    padding: 14,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -15,34 +15,69 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
+    gap: 10,
+    marginBottom: 14,
+  },
+  headerBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.primaryLight,
+  },
+  headerText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  eyebrow: {
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    color: Colors.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+    marginBottom: 2,
   },
   title: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: "Inter_600SemiBold",
     color: Colors.text,
   },
-  closeBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.surfaceSecondary,
+  headerActionBtn: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    gap: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    backgroundColor: Colors.surfaceSecondary,
+  },
+  headerActionText: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.primary,
   },
   statsRow: {
     flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.surfaceSecondary,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
+    gap: 10,
   },
-  statBox: {
+  statCard: {
     flex: 1,
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    padding: 14,
+    minHeight: 98,
+  },
+  activeHazardsCard: {
+    borderWidth: 1,
+    borderColor: Colors.primaryLight,
+  },
+  activeHazardsRow: {
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 6,
   },
   statNumber: {
     fontSize: 24,
@@ -53,20 +88,49 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Inter_500Medium",
     color: Colors.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  statMeta: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: Colors.textTertiary,
+    marginTop: 6,
+  },
+  statusText: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: Colors.textSecondary,
+    marginTop: 12,
+  },
+  breakdownHeader: {
+    marginBottom: 10,
+  },
+  breakdownTitle: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.text,
+  },
+  breakdownSubtitle: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: Colors.textSecondary,
     marginTop: 2,
   },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: Colors.border,
+  breakdownList: {
+    maxHeight: 210,
   },
-  breakdown: {
+  breakdownContent: {
     gap: 8,
   },
   breakdownItem: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
   },
   breakdownLabel: {
     flex: 1,
@@ -74,9 +138,32 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
     color: Colors.text,
   },
+  breakdownCountPill: {
+    minWidth: 34,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    alignItems: "center",
+    backgroundColor: Colors.surfaceSecondary,
+  },
   breakdownCount: {
     fontSize: 14,
     fontFamily: "Inter_700Bold",
+    color: Colors.text,
+  },
+  emptyState: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderRadius: 14,
+    backgroundColor: Colors.surface,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+  },
+  emptyStateText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
     color: Colors.textSecondary,
   },
 });

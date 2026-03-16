@@ -76,22 +76,22 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.6,
   },
-  summaryContainer: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    zIndex: 10,
-  },
   bottomControls: {
     position: "absolute",
     bottom: 24,
     left: 0,
     right: 0,
-    flexDirection: "row",
-    alignItems: "center",
     paddingHorizontal: 16,
     gap: 10,
     zIndex: 20,
+  },
+  bottomControlRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  dashboardContainer: {
+    width: "100%",
   },
   emergencyBtn: {
     width: 56,

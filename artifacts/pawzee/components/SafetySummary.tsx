@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Text, Pressable } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { View, Text, Pressable, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Colors from "@/constants/colors";
 import { HazardIcon } from "./HazardIcon";
@@ -9,60 +9,166 @@ import { styles } from "./componentStyleSheet/StyleSheetSafetySummary";
 
 interface SafetySummaryProps {
   summary: HazardSummary | null;
-  visible: boolean;
-  onClose: () => void;
-  locationName?: string;
+  locationName: string;
+  loading?: boolean;
+  showingSearchLocation?: boolean;
+  onBackToCurrentLocation?: () => void;
 }
 
-export function SafetySummaryOverlay({
-  summary,
-  visible,
-  onClose,
-  locationName,
-}: SafetySummaryProps) {
-  if (!visible || !summary) return null;
+type SummaryView = "summary" | "breakdown";
 
-  const breakdownEntries = Object.entries(summary.breakdown).sort(
-    (a, b) => b[1] - a[1],
+export function SafetySummaryDashboard({
+  summary,
+  loading = false,
+  locationName,
+  showingSearchLocation = false,
+  onBackToCurrentLocation,
+}: SafetySummaryProps) {
+  const [view, setView] = useState<SummaryView>("summary");
+
+  useEffect(() => {
+    setView("summary");
+  }, [locationName, loading, summary?.hazardsToday, summary?.activeHazards]);
+
+  const breakdownEntries = useMemo(
+    () =>
+      summary
+        ? Object.entries(summary.breakdown).sort((a, b) => b[1] - a[1])
+        : [],
+    [summary],
   );
+
+  const hasSummary = Boolean(summary);
+  const reportedTodayValue = loading
+    ? "..."
+    : summary
+      ? String(summary.hazardsToday)
+      : "--";
+  const activeHazardsValue = loading
+    ? "..."
+    : summary
+      ? String(summary.activeHazards)
+      : "--";
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Ionicons name="shield-checkmark" size={20} color={Colors.primary} />
-        <Text style={styles.title}>
-          {locationName ? `${locationName}` : "Area Safety"}
-        </Text>
-        <Pressable onPress={onClose} style={styles.closeBtn}>
-          <Ionicons name="close" size={18} color={Colors.textSecondary} />
-        </Pressable>
+        <View style={styles.headerBadge}>
+          <Ionicons name="shield-checkmark" size={18} color={Colors.primary} />
+        </View>
+        <View style={styles.headerText}>
+          <Text style={styles.eyebrow}>Area Summary</Text>
+          <Text style={styles.title} numberOfLines={1}>
+            {locationName}
+          </Text>
+        </View>
+
+        {view === "breakdown" ? (
+          <Pressable
+            onPress={() => setView("summary")}
+            style={styles.headerActionBtn}
+          >
+            <Ionicons name="arrow-back" size={16} color={Colors.primary} />
+            <Text style={styles.headerActionText}>Back</Text>
+          </Pressable>
+        ) : showingSearchLocation && onBackToCurrentLocation ? (
+          <Pressable
+            onPress={onBackToCurrentLocation}
+            style={styles.headerActionBtn}
+          >
+            <Ionicons name="arrow-back" size={16} color={Colors.primary} />
+            <Text style={styles.headerActionText}>Current area</Text>
+          </Pressable>
+        ) : null}
       </View>
 
-      <View style={styles.statsRow}>
-        <View style={styles.statBox}>
-          <Text style={styles.statNumber}>{summary.hazardsToday}</Text>
-          <Text style={styles.statLabel}>Today</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statBox}>
-          <Text style={styles.statNumber}>{summary.activeHazards}</Text>
-          <Text style={styles.statLabel}>Active</Text>
-        </View>
-      </View>
+      {view === "summary" ? (
+        <>
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>Reported Today</Text>
+              <Text style={styles.statNumber}>{reportedTodayValue}</Text>
+              <Text style={styles.statMeta}>New reports nearby</Text>
+            </View>
 
-      {breakdownEntries.length > 0 && (
-        <View style={styles.breakdown}>
-          {breakdownEntries.map(([category, count]) => {
-            const config = HAZARD_CONFIGS[category as HazardCategory] || HAZARD_CONFIGS.other;
-            return (
-              <View key={category} style={styles.breakdownItem}>
-                <HazardIcon category={category as HazardCategory} size={24} />
-                <Text style={styles.breakdownLabel}>{config.label}</Text>
-                <Text style={styles.breakdownCount}>{count}</Text>
+            <Pressable
+              style={[styles.statCard, styles.activeHazardsCard]}
+              onPress={() => setView("breakdown")}
+              disabled={!hasSummary || loading}
+            >
+              <Text style={styles.statLabel}>Active Hazards</Text>
+              <View style={styles.activeHazardsRow}>
+                <Text style={styles.statNumber}>{activeHazardsValue}</Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={Colors.primary}
+                />
               </View>
-            );
-          })}
-        </View>
+              <Text style={styles.statMeta}>Tap to view categories</Text>
+            </Pressable>
+          </View>
+
+          {loading && (
+            <Text style={styles.statusText}>Updating this area's summary...</Text>
+          )}
+
+          {!loading && !hasSummary && (
+            <Text style={styles.statusText}>
+              Area summary unavailable right now.
+            </Text>
+          )}
+        </>
+      ) : (
+        <>
+          <View style={styles.breakdownHeader}>
+            <Text style={styles.breakdownTitle}>Active hazard categories</Text>
+            <Text style={styles.breakdownSubtitle}>
+              {hasSummary
+                ? `${summary?.activeHazards ?? 0} active hazards`
+                : "No data"}
+            </Text>
+          </View>
+
+          {breakdownEntries.length > 0 ? (
+            <ScrollView
+              style={styles.breakdownList}
+              contentContainerStyle={styles.breakdownContent}
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled
+            >
+              {breakdownEntries.map(([category, count]) => {
+                const config =
+                  HAZARD_CONFIGS[category as HazardCategory] ||
+                  HAZARD_CONFIGS.other;
+
+                return (
+                  <View key={category} style={styles.breakdownItem}>
+                    <HazardIcon
+                      category={category as HazardCategory}
+                      size={24}
+                    />
+                    <Text style={styles.breakdownLabel}>{config.label}</Text>
+                    <View style={styles.breakdownCountPill}>
+                      <Text style={styles.breakdownCount}>{count}</Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons
+                name="leaf-outline"
+                size={18}
+                color={Colors.textTertiary}
+              />
+              <Text style={styles.emptyStateText}>
+                No active hazard categories in this area.
+              </Text>
+            </View>
+          )}
+        </>
       )}
     </View>
   );
