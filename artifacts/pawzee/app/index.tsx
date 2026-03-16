@@ -38,7 +38,9 @@ import { SearchBar, type SearchResult } from "@/components/SearchBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { EmergencyVetSheet } from "@/components/EmergencyVetSheet";
 import { SafetySummaryDashboard } from "@/components/SafetySummary";
+import { WeatherReportBar } from "@/components/WeatherReportBar";
 import { useSettings } from "@/lib/settings";
+import { fetchAreaWeather, type AreaWeatherReport } from "@/lib/weather";
 
 function clusterHazards(
   hazards: HazardItem[],
@@ -159,6 +161,14 @@ export default function MapScreen() {
     useState<HazardSummary | null>(null);
   const [searchedAreaName, setSearchedAreaName] = useState("");
   const [loadingSearchedAreaSummary, setLoadingSearchedAreaSummary] =
+    useState(false);
+  const [currentAreaWeather, setCurrentAreaWeather] =
+    useState<AreaWeatherReport | null>(null);
+  const [loadingCurrentAreaWeather, setLoadingCurrentAreaWeather] =
+    useState(false);
+  const [searchedAreaWeather, setSearchedAreaWeather] =
+    useState<AreaWeatherReport | null>(null);
+  const [loadingSearchedAreaWeather, setLoadingSearchedAreaWeather] =
     useState(false);
 
   const [queryCenter, setQueryCenter] = useState<{
@@ -354,6 +364,45 @@ export default function MapScreen() {
   }, [locationReady, userLocation?.lat, userLocation?.lng, alertRadiusMeters]);
 
   useEffect(() => {
+    if (!locationReady) {
+      return;
+    }
+
+    const lat = userLocation?.lat ?? DEFAULT_REGION.latitude;
+    const lng = userLocation?.lng ?? DEFAULT_REGION.longitude;
+    let isActive = true;
+
+    const loadCurrentAreaWeather = async () => {
+      setLoadingCurrentAreaWeather(true);
+
+      try {
+        const weatherData = await fetchAreaWeather(lat, lng);
+        if (!isActive) {
+          return;
+        }
+
+        setCurrentAreaWeather(weatherData);
+      } catch {
+        if (!isActive) {
+          return;
+        }
+
+        setCurrentAreaWeather(null);
+      } finally {
+        if (isActive) {
+          setLoadingCurrentAreaWeather(false);
+        }
+      }
+    };
+
+    loadCurrentAreaWeather();
+
+    return () => {
+      isActive = false;
+    };
+  }, [locationReady, userLocation?.lat, userLocation?.lng]);
+
+  useEffect(() => {
     if (!queryCenter) {
       setSearchedAreaSummary(null);
       setLoadingSearchedAreaSummary(false);
@@ -396,6 +445,49 @@ export default function MapScreen() {
       isActive = false;
     };
   }, [queryCenter?.lat, queryCenter?.lng, alertRadiusMeters]);
+
+  useEffect(() => {
+    if (!queryCenter) {
+      setSearchedAreaWeather(null);
+      setLoadingSearchedAreaWeather(false);
+      return;
+    }
+
+    let isActive = true;
+
+    const loadSearchedAreaWeather = async () => {
+      setLoadingSearchedAreaWeather(true);
+
+      try {
+        const weatherData = await fetchAreaWeather(
+          queryCenter.lat,
+          queryCenter.lng,
+        );
+
+        if (!isActive) {
+          return;
+        }
+
+        setSearchedAreaWeather(weatherData);
+      } catch {
+        if (!isActive) {
+          return;
+        }
+
+        setSearchedAreaWeather(null);
+      } finally {
+        if (isActive) {
+          setLoadingSearchedAreaWeather(false);
+        }
+      }
+    };
+
+    loadSearchedAreaWeather();
+
+    return () => {
+      isActive = false;
+    };
+  }, [queryCenter?.lat, queryCenter?.lng]);
 
   const clusters = clusterHazards(hazards, zoomLevel);
 
@@ -472,6 +564,7 @@ export default function MapScreen() {
     setSearchLocation("");
     setSearchedAreaName("");
     setSearchedAreaSummary(null);
+    setSearchedAreaWeather(null);
     setQueryCenter(null);
   };
 
@@ -487,6 +580,12 @@ export default function MapScreen() {
   const activeAreaSummaryLoading = showingSearchArea
     ? loadingSearchedAreaSummary
     : loadingCurrentAreaSummary;
+  const activeAreaWeather = showingSearchArea
+    ? searchedAreaWeather
+    : currentAreaWeather;
+  const activeAreaWeatherLoading = showingSearchArea
+    ? loadingSearchedAreaWeather
+    : loadingCurrentAreaWeather;
 
   if (!locationReady) {
     return (
@@ -509,7 +608,7 @@ export default function MapScreen() {
         showsCompass={false}
         mapPadding={{
           top: insets.top + 72,
-          bottom: insets.bottom + 240,
+          bottom: insets.bottom + 410,
           left: 0,
           right: 0,
         }}
@@ -612,6 +711,13 @@ export default function MapScreen() {
             loading={activeAreaSummaryLoading}
             showingSearchLocation={showingSearchArea}
             onBackToCurrentLocation={handleRecenter}
+          />
+        </View>
+
+        <View style={styles.dashboardContainer}>
+          <WeatherReportBar
+            weather={activeAreaWeather}
+            loading={activeAreaWeatherLoading}
           />
         </View>
       </View>
