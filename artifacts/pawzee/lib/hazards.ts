@@ -1,4 +1,9 @@
-import { MaterialCommunityIcons, Ionicons, FontAwesome5, MaterialIcons } from "@expo/vector-icons";
+import {
+  MaterialCommunityIcons,
+  Ionicons,
+  FontAwesome5,
+  MaterialIcons,
+} from "@expo/vector-icons";
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
@@ -18,7 +23,11 @@ export type HazardCategory =
 
 export interface HazardIconConfig {
   label: string;
-  iconFamily: "MaterialCommunityIcons" | "Ionicons" | "FontAwesome5" | "MaterialIcons";
+  iconFamily:
+    | "MaterialCommunityIcons"
+    | "Ionicons"
+    | "FontAwesome5"
+    | "MaterialIcons";
   iconName: string;
   color: string;
   bgColor: string;
@@ -128,7 +137,9 @@ export const HAZARD_CONFIGS: Record<HazardCategory, HazardIconConfig> = {
   },
 };
 
-export const HAZARD_CATEGORIES = Object.keys(HAZARD_CONFIGS) as HazardCategory[];
+export const HAZARD_CATEGORIES = Object.keys(
+  HAZARD_CONFIGS,
+) as HazardCategory[];
 
 export function formatTimeAgo(dateStr: string): string {
   const now = Date.now();
@@ -156,7 +167,7 @@ export function formatTimeRemaining(dateStr: string): string {
 }
 
 export function formatDistance(meters: number): string {
-  return `${Math.round(meters)}m away`;
+  return `${Math.round(meters / 1000)}km away`;
 }
 
 export function haversineDistance(

@@ -312,7 +312,11 @@ export default function MapScreen() {
       setSearchLocation(label);
       setQueryCenter({ lat: latitude, lng: longitude });
 
-      const summaryData = await fetchHazardSummary(latitude, longitude, alertRadiusMeters);
+      const summaryData = await fetchHazardSummary(
+        latitude,
+        longitude,
+        alertRadiusMeters,
+      );
       setSummary(summaryData);
       setShowSummary(true);
     } catch {
@@ -348,7 +352,8 @@ export default function MapScreen() {
     }
   };
 
-  const showStepCounterChip = stepCounter && (loadingStepCounter || showStepCounter);
+  const showStepCounterChip =
+    stepCounter && (loadingStepCounter || showStepCounter);
 
   if (!locationReady) {
     return (
@@ -370,8 +375,8 @@ export default function MapScreen() {
         showsMyLocationButton={false}
         showsCompass={false}
         mapPadding={{
-          top: insets.top + 72,
-          bottom: insets.bottom + 148,
+          top: insets.top + 144,
+          bottom: insets.bottom + 380,
           left: 0,
           right: 0,
         }}
