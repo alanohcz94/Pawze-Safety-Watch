@@ -375,8 +375,8 @@ export default function MapScreen() {
         showsMyLocationButton={false}
         showsCompass={false}
         mapPadding={{
-          top: insets.top + 144,
-          bottom: insets.bottom + 380,
+          top: insets.top + 72,
+          bottom: insets.bottom + 148,
           left: 0,
           right: 0,
         }}
@@ -459,7 +459,7 @@ export default function MapScreen() {
           styles.bottomControls,
           {
             paddingBottom:
-              Platform.OS === "web" ? 34 : Math.max(insets.bottom, 16),
+              Platform.OS === "web" ? 34 : Math.max(insets.bottom, 24),
           },
         ]}
       >
