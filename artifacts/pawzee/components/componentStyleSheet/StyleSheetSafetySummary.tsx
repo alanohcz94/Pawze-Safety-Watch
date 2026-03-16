@@ -5,7 +5,9 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: Colors.mapOverlay,
     borderRadius: 20,
-    padding: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -16,7 +18,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    marginBottom: 14,
+    marginBottom: 10,
   },
   headerBadge: {
     width: 34,
@@ -40,7 +42,7 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: "Inter_600SemiBold",
     color: Colors.text,
   },
@@ -48,8 +50,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingVertical: 7,
+    paddingHorizontal: 9,
     borderRadius: 12,
     backgroundColor: Colors.surfaceSecondary,
   },
@@ -60,14 +62,14 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: "row",
-    gap: 10,
+    gap: 8,
   },
   statCard: {
     flex: 1,
     backgroundColor: Colors.surface,
     borderRadius: 16,
-    padding: 14,
-    minHeight: 98,
+    padding: 12,
+    minHeight: 86,
   },
   activeHazardsCard: {
     borderWidth: 1,
@@ -80,7 +82,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: 21,
     fontFamily: "Inter_700Bold",
     color: Colors.text,
   },
@@ -92,10 +94,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   statMeta: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: "Inter_400Regular",
     color: Colors.textTertiary,
-    marginTop: 6,
+    marginTop: 4,
   },
   statusText: {
     fontSize: 12,
@@ -104,7 +106,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   breakdownHeader: {
-    marginBottom: 10,
+    marginBottom: 8,
   },
   breakdownTitle: {
     fontSize: 14,
@@ -118,10 +120,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   breakdownList: {
-    maxHeight: 210,
+    maxHeight: 140,
   },
   breakdownContent: {
-    gap: 8,
+    gap: 6,
   },
   breakdownItem: {
     flexDirection: "row",
@@ -129,8 +131,8 @@ const styles = StyleSheet.create({
     gap: 10,
     backgroundColor: Colors.surface,
     borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
   },
   breakdownLabel: {
     flex: 1,
@@ -157,8 +159,8 @@ const styles = StyleSheet.create({
     gap: 8,
     borderRadius: 14,
     backgroundColor: Colors.surface,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
   },
   emptyStateText: {
     flex: 1,

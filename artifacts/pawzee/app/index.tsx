@@ -608,7 +608,7 @@ export default function MapScreen() {
         showsCompass={false}
         mapPadding={{
           top: insets.top + 72,
-          bottom: insets.bottom + 410,
+          bottom: insets.bottom + 310,
           left: 0,
           right: 0,
         }}
@@ -674,7 +674,7 @@ export default function MapScreen() {
           styles.bottomControls,
           {
             paddingBottom:
-              Platform.OS === "web" ? 34 : Math.max(insets.bottom, 24),
+              Platform.OS === "web" ? 24 : Math.max(insets.bottom, 14),
           },
         ]}
       >
@@ -684,7 +684,7 @@ export default function MapScreen() {
             <MaterialCommunityIcons
               name="hospital-building"
               size={22}
-              color="#FFF"
+              color={Colors.primary}
             />
           </Pressable>
 
@@ -700,7 +700,7 @@ export default function MapScreen() {
 
           {/* Report Hazard - Bottom Right */}
           <Pressable style={styles.reportBtn} onPress={handleReportPress}>
-            <Ionicons name="warning" size={22} color="#FFF" />
+            <Ionicons name="warning" size={22} color={Colors.warning} />
           </Pressable>
         </View>
 

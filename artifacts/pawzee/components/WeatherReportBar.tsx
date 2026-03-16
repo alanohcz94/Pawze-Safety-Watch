@@ -56,8 +56,8 @@ export function WeatherReportBar({
             <View style={styles.currentIconWrap}>
               <MaterialCommunityIcons
                 name={currentVisual.iconName}
-                size={30}
-                color={Colors.warning}
+                size={24}
+                color={Colors.primary}
               />
             </View>
           )}
@@ -91,12 +91,12 @@ export function WeatherReportBar({
 
                 <MaterialCommunityIcons
                   name={visual.iconName}
-                  size={28}
+                  size={22}
                   color={
                     hour.precipitationProbability &&
                     hour.precipitationProbability > 0
-                      ? "#58D4FF"
-                      : "#FFD24D"
+                      ? Colors.primary
+                      : Colors.warning
                   }
                 />
 
