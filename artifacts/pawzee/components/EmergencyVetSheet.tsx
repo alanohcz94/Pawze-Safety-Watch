@@ -12,7 +12,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Colors from "@/constants/colors";
 import { fetchNearbyVets, type VetClinic } from "@/lib/api";
-import { haversineDistance } from "@/lib/hazards";
+import { formatDistance, haversineDistance } from "@/lib/hazards";
 import { SINGAPORE_ER_VETS } from "@/constants/constantVariable";
 import { styles } from "./componentStyleSheet/StyleSheetEmergencyVetSheet";
 
@@ -126,11 +126,7 @@ export function EmergencyVetSheet({
         <Text style={styles.vetAddress} numberOfLines={1}>
           {item.address}
         </Text>
-        <Text style={styles.vetDistance}>
-          {item.distance < 1000
-            ? `${item.distance}m away`
-            : `${(item.distance / 1000).toFixed(1)}km away`}
-        </Text>
+        <Text style={styles.vetDistance}>{formatDistance(item.distance)}</Text>
       </View>
       <View style={styles.vetActions}>
         <Pressable

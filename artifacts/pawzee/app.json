@@ -14,9 +14,16 @@
       "backgroundColor": "#0D1B2A"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSMotionUsageDescription": "Pawzee uses motion data to show your daily step count while you walk."
+      }
     },
-    "android": {},
+    "android": {
+      "permissions": [
+        "ACTIVITY_RECOGNITION"
+      ]
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },

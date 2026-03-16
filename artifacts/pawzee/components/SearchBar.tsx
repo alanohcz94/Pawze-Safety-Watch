@@ -26,6 +26,9 @@ export interface SearchResult {
 interface SearchBarProps {
   onSearch: (result: SearchResult) => void;
   placeholder?: string;
+  displayText?: string;
+  onRecenter?: () => void;
+  recenterDisabled?: boolean;
 }
 
 interface GeoSuggestion {
@@ -35,7 +38,13 @@ interface GeoSuggestion {
   longitude: number;
 }
 
-export function SearchBar({ onSearch, placeholder = "Search location..." }: SearchBarProps) {
+export function SearchBar({
+  onSearch,
+  placeholder = "Search location...",
+  displayText = "",
+  onRecenter,
+  recenterDisabled = false,
+}: SearchBarProps) {
   const insets = useSafeAreaInsets();
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [query, setQuery] = useState("");
@@ -141,10 +150,45 @@ export function SearchBar({ onSearch, placeholder = "Search location..." }: Sear
 
   return (
     <>
-      <Pressable style={styles.triggerContainer} onPress={openOverlay}>
-        <Ionicons name="search" size={18} color={Colors.textTertiary} style={styles.triggerIcon} />
-        <Text style={styles.triggerText}>{placeholder}</Text>
-      </Pressable>
+      <View style={styles.triggerContainer}>
+        <Pressable style={styles.triggerPressable} onPress={openOverlay}>
+          <Ionicons
+            name="search"
+            size={18}
+            color={Colors.textTertiary}
+            style={styles.triggerIcon}
+          />
+          <Text
+            style={[
+              styles.triggerText,
+              displayText && styles.triggerTextFilled,
+            ]}
+            numberOfLines={1}
+          >
+            {displayText || placeholder}
+          </Text>
+        </Pressable>
+
+        {onRecenter && (
+          <>
+            <View style={styles.triggerDivider} />
+            <Pressable
+              style={[
+                styles.trailingActionBtn,
+                recenterDisabled && styles.trailingActionBtnDisabled,
+              ]}
+              onPress={onRecenter}
+              disabled={recenterDisabled}
+            >
+              <Ionicons
+                name="locate"
+                size={18}
+                color={recenterDisabled ? Colors.textTertiary : Colors.primary}
+              />
+            </Pressable>
+          </>
+        )}
+      </View>
 
       <Modal
         visible={overlayVisible}

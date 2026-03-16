@@ -17,10 +17,9 @@ import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/lib/auth";
-import { useSettings } from "@/lib/settings";
+import { ALERT_RADIUS_OPTIONS, useSettings } from "@/lib/settings";
 import { styles } from "./componentStyleSheet/StyleSheetProfileMenu";
 
-const RADIUS_OPTIONS = [1, 3, 5, 10, 15];
 const DRAWER_WIDTH = 300;
 
 interface ProfileMenuProps {
@@ -30,7 +29,8 @@ interface ProfileMenuProps {
 
 export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
   const insets = useSafeAreaInsets();
-  const { user, isAuthenticated, isGuest, login, loginAsGuest, logout } = useAuth();
+  const { user, isAuthenticated, isGuest, login, loginAsGuest, logout } =
+    useAuth();
   const settings = useSettings();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -108,9 +108,13 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
   };
 
   const handleSendSupport = () => {
-    const subject = encodeURIComponent(supportSubject.trim() || "Pawzee Support");
+    const subject = encodeURIComponent(
+      supportSubject.trim() || "Pawzee Support",
+    );
     const body = encodeURIComponent(supportMessage.trim());
-    Linking.openURL(`mailto:supportPawject@gmail.com?subject=${subject}&body=${body}`);
+    Linking.openURL(
+      `mailto:supportPawject@gmail.com?subject=${subject}&body=${body}`,
+    );
     setSupportSubject("Pawzee Support");
     setSupportMessage("");
     setShowSupportForm(false);
@@ -181,7 +185,12 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
 
   return (
     <>
-      <Modal visible={modalVisible} animationType="none" transparent onRequestClose={onClose}>
+      <Modal
+        visible={modalVisible}
+        animationType="none"
+        transparent
+        onRequestClose={onClose}
+      >
         <View style={styles.overlay}>
           <Animated.View
             style={[
@@ -239,9 +248,14 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
                   </Pressable>
 
                   {isGuest && (
-                    <Pressable style={styles.menuItem} onPress={handleUpgradeToReplit}>
+                    <Pressable
+                      style={styles.menuItem}
+                      onPress={handleUpgradeToReplit}
+                    >
                       <Feather name="log-in" size={20} color={Colors.primary} />
-                      <Text style={[styles.menuItemText, { color: Colors.primary }]}>
+                      <Text
+                        style={[styles.menuItemText, { color: Colors.primary }]}
+                      >
                         Link Replit Account
                       </Text>
                     </Pressable>
@@ -254,7 +268,11 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
                     onPress={() => setSettingsOpen(!settingsOpen)}
                   >
                     <View style={styles.sectionHeaderLeft}>
-                      <Ionicons name="settings-outline" size={20} color={Colors.text} />
+                      <Ionicons
+                        name="settings-outline"
+                        size={20}
+                        color={Colors.text}
+                      />
                       <Text style={styles.sectionHeaderText}>Settings</Text>
                     </View>
                     <Ionicons
@@ -268,40 +286,61 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
                     <View style={styles.sectionBody}>
                       <View style={styles.settingRow}>
                         <View style={styles.settingInfo}>
-                          <Ionicons name="notifications-outline" size={18} color={Colors.text} />
+                          <Ionicons
+                            name="notifications-outline"
+                            size={18}
+                            color={Colors.text}
+                          />
                           <Text style={styles.settingLabel}>Notifications</Text>
                         </View>
                         <Switch
                           value={settings.notifications}
-                          onValueChange={(v) => settings.updateSetting("notifications", v)}
-                          trackColor={{ false: Colors.border, true: Colors.primaryLight }}
-                          thumbColor={settings.notifications ? Colors.primary : Colors.textTertiary}
+                          onValueChange={(v) =>
+                            settings.updateSetting("notifications", v)
+                          }
+                          trackColor={{
+                            false: Colors.border,
+                            true: Colors.primaryLight,
+                          }}
+                          thumbColor={
+                            settings.notifications
+                              ? Colors.primary
+                              : Colors.textTertiary
+                          }
                         />
                       </View>
 
                       <View style={styles.settingRow}>
                         <View style={styles.settingInfo}>
-                          <Ionicons name="radio-outline" size={18} color={Colors.text} />
+                          <Ionicons
+                            name="radio-outline"
+                            size={18}
+                            color={Colors.text}
+                          />
                           <Text style={styles.settingLabel}>Alert Radius</Text>
                         </View>
                       </View>
                       <View style={styles.radiusPills}>
-                        {RADIUS_OPTIONS.map((km) => (
+                        {ALERT_RADIUS_OPTIONS.map((meters) => (
                           <Pressable
-                            key={km}
+                            key={meters}
                             style={[
                               styles.radiusPill,
-                              settings.alertRadius === km && styles.radiusPillActive,
+                              settings.alertRadius === meters &&
+                                styles.radiusPillActive,
                             ]}
-                            onPress={() => settings.updateSetting("alertRadius", km)}
+                            onPress={() =>
+                              settings.updateSetting("alertRadius", meters)
+                            }
                           >
                             <Text
                               style={[
                                 styles.radiusPillText,
-                                settings.alertRadius === km && styles.radiusPillTextActive,
+                                settings.alertRadius === meters &&
+                                  styles.radiusPillTextActive,
                               ]}
                             >
-                              {km} km
+                              {meters}m
                             </Text>
                           </Pressable>
                         ))}
@@ -309,18 +348,32 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
 
                       <View style={styles.settingRow}>
                         <View style={styles.settingInfo}>
-                          <Ionicons name="mic-outline" size={18} color={Colors.textTertiary} />
+                          <Ionicons
+                            name="mic-outline"
+                            size={18}
+                            color={Colors.textTertiary}
+                          />
                           <View>
-                            <Text style={[styles.settingLabel, { color: Colors.textTertiary }]}>
+                            <Text
+                              style={[
+                                styles.settingLabel,
+                                { color: Colors.textTertiary },
+                              ]}
+                            >
                               Audio Report
                             </Text>
-                            <Text style={styles.comingSoon}>(Next Release)</Text>
+                            <Text style={styles.comingSoon}>
+                              (Next Release)
+                            </Text>
                           </View>
                         </View>
                         <Switch
                           value={true}
                           disabled
-                          trackColor={{ false: Colors.border, true: Colors.primaryLight }}
+                          trackColor={{
+                            false: Colors.border,
+                            true: Colors.primaryLight,
+                          }}
                           thumbColor={Colors.primary}
                           style={{ opacity: 0.5 }}
                         />
@@ -328,14 +381,27 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
 
                       <View style={styles.settingRow}>
                         <View style={styles.settingInfo}>
-                          <Ionicons name="footsteps-outline" size={18} color={Colors.text} />
+                          <Ionicons
+                            name="footsteps-outline"
+                            size={18}
+                            color={Colors.text}
+                          />
                           <Text style={styles.settingLabel}>Step Counter</Text>
                         </View>
                         <Switch
                           value={settings.stepCounter}
-                          onValueChange={(v) => settings.updateSetting("stepCounter", v)}
-                          trackColor={{ false: Colors.border, true: Colors.primaryLight }}
-                          thumbColor={settings.stepCounter ? Colors.primary : Colors.textTertiary}
+                          onValueChange={(v) =>
+                            settings.updateSetting("stepCounter", v)
+                          }
+                          trackColor={{
+                            false: Colors.border,
+                            true: Colors.primaryLight,
+                          }}
+                          thumbColor={
+                            settings.stepCounter
+                              ? Colors.primary
+                              : Colors.textTertiary
+                          }
                         />
                       </View>
                     </View>
@@ -348,8 +414,14 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
                     onPress={() => setHelpOpen(!helpOpen)}
                   >
                     <View style={styles.sectionHeaderLeft}>
-                      <Ionicons name="help-circle-outline" size={20} color={Colors.text} />
-                      <Text style={styles.sectionHeaderText}>Help & Feedback</Text>
+                      <Ionicons
+                        name="help-circle-outline"
+                        size={20}
+                        color={Colors.text}
+                      />
+                      <Text style={styles.sectionHeaderText}>
+                        Help & Feedback
+                      </Text>
                     </View>
                     <Ionicons
                       name={helpOpen ? "chevron-up" : "chevron-down"}
@@ -364,8 +436,17 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
                         style={styles.menuItem}
                         onPress={() => setShowSupportForm(true)}
                       >
-                        <Ionicons name="help-circle-outline" size={18} color={Colors.primary} />
-                        <Text style={[styles.menuItemText, { color: Colors.primary }]}>
+                        <Ionicons
+                          name="help-circle-outline"
+                          size={18}
+                          color={Colors.primary}
+                        />
+                        <Text
+                          style={[
+                            styles.menuItemText,
+                            { color: Colors.primary },
+                          ]}
+                        >
                           Get Support
                         </Text>
                       </Pressable>
@@ -398,7 +479,11 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
                   </Pressable>
 
                   <Pressable style={styles.guestBtn} onPress={handleGuest}>
-                    <Ionicons name="person-outline" size={20} color={Colors.primary} />
+                    <Ionicons
+                      name="person-outline"
+                      size={20}
+                      color={Colors.primary}
+                    />
                     <Text style={styles.guestBtnText}>Continue as Guest</Text>
                   </Pressable>
                 </View>

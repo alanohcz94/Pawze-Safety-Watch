@@ -156,8 +156,7 @@ export function formatTimeRemaining(dateStr: string): string {
 }
 
 export function formatDistance(meters: number): string {
-  if (meters < 1000) return `${Math.round(meters)}m away`;
-  return `${(meters / 1000).toFixed(1)}km away`;
+  return `${Math.round(meters)}m away`;
 }
 
 export function haversineDistance(

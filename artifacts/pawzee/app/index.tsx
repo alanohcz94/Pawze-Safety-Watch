@@ -26,6 +26,13 @@ import Colors from "@/constants/colors";
 import { fetchHazards, fetchHazardSummary } from "@/lib/api";
 import type { HazardItem, HazardSummary } from "@/lib/api";
 import { haversineDistance } from "@/lib/hazards";
+import {
+  getPedometerStepCountAsync,
+  isPedometerAvailableAsync,
+  requestPedometerPermissionsAsync,
+  supportsPedometerHistory,
+  watchPedometerStepCount,
+} from "@/lib/pedometer";
 import { HazardMarker, ClusterMarker } from "@/components/HazardMarker";
 import { HazardDetailSheet } from "@/components/HazardDetailSheet";
 import { SearchBar, type SearchResult } from "@/components/SearchBar";
@@ -87,8 +94,8 @@ export default function MapScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const mapRef = useRef<MapView>(null);
-  const { alertRadius } = useSettings();
-  const alertRadiusMeters = alertRadius * 1000;
+  const { alertRadius, stepCounter } = useSettings();
+  const alertRadiusMeters = alertRadius;
 
   const [region, setRegion] = useState<Region>(DEFAULT_REGION);
   const [userLocation, setUserLocation] = useState<{
@@ -104,6 +111,12 @@ export default function MapScreen() {
   const [searchLocation, setSearchLocation] = useState<string>("");
   const [summary, setSummary] = useState<HazardSummary | null>(null);
   const [zoomLevel, setZoomLevel] = useState(15);
+  const [todaySteps, setTodaySteps] = useState(0);
+  const [showStepCounter, setShowStepCounter] = useState(false);
+  const [loadingStepCounter, setLoadingStepCounter] = useState(false);
+  const [stepCounterDayKey, setStepCounterDayKey] = useState(() =>
+    new Date().toDateString(),
+  );
 
   const [queryCenter, setQueryCenter] = useState<{
     lat: number;
@@ -171,6 +184,87 @@ export default function MapScreen() {
     return () => clearTimeout(timeout);
   }, []);
 
+  useEffect(() => {
+    if (!stepCounter) {
+      return;
+    }
+
+    const now = new Date();
+    const nextMidnight = new Date(now);
+    nextMidnight.setHours(24, 0, 1, 0);
+
+    const timeout = setTimeout(() => {
+      setStepCounterDayKey(new Date().toDateString());
+    }, nextMidnight.getTime() - now.getTime());
+
+    return () => clearTimeout(timeout);
+  }, [stepCounter, stepCounterDayKey]);
+
+  useEffect(() => {
+    if (!stepCounter) {
+      setTodaySteps(0);
+      setShowStepCounter(false);
+      setLoadingStepCounter(false);
+      return;
+    }
+
+    let isActive = true;
+    let subscription: { remove: () => void } | null = null;
+
+    const loadTodaySteps = async () => {
+      setLoadingStepCounter(true);
+      setShowStepCounter(false);
+
+      try {
+        const isAvailable = await isPedometerAvailableAsync();
+        if (!isActive || !isAvailable) {
+          return;
+        }
+
+        const permission = await requestPedometerPermissionsAsync();
+        if (!isActive || !permission.granted) {
+          return;
+        }
+
+        let baseSteps = 0;
+        const now = new Date();
+        const startOfDay = new Date(now);
+        startOfDay.setHours(0, 0, 0, 0);
+
+        if (supportsPedometerHistory()) {
+          try {
+            const result = await getPedometerStepCountAsync(startOfDay, now);
+            if (!isActive) {
+              return;
+            }
+            baseSteps = result.steps;
+          } catch {}
+        }
+
+        setTodaySteps(baseSteps);
+        setShowStepCounter(true);
+
+        subscription = watchPedometerStepCount((result) => {
+          if (!isActive) {
+            return;
+          }
+          setTodaySteps(baseSteps + result.steps);
+        });
+      } finally {
+        if (isActive) {
+          setLoadingStepCounter(false);
+        }
+      }
+    };
+
+    loadTodaySteps();
+
+    return () => {
+      isActive = false;
+      subscription?.remove();
+    };
+  }, [stepCounter, stepCounterDayKey]);
+
   const clusters = clusterHazards(hazards, zoomLevel);
 
   const handleRegionChange = useCallback((newRegion: Region) => {
@@ -237,6 +331,8 @@ export default function MapScreen() {
   };
 
   const handleRecenter = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
     if (userLocation) {
       const newRegion: Region = {
         latitude: userLocation.lat,
@@ -245,10 +341,14 @@ export default function MapScreen() {
         longitudeDelta: 0.01,
       };
       mapRef.current?.animateToRegion(newRegion, 500);
+      setSearchLocation("");
       setQueryCenter(null);
+      setSummary(null);
       setShowSummary(false);
     }
   };
+
+  const showStepCounterChip = stepCounter && (loadingStepCounter || showStepCounter);
 
   if (!locationReady) {
     return (
@@ -269,7 +369,12 @@ export default function MapScreen() {
         showsUserLocation
         showsMyLocationButton={false}
         showsCompass={false}
-        mapPadding={{ top: insets.top + 60, bottom: 120, left: 0, right: 0 }}
+        mapPadding={{
+          top: insets.top + 72,
+          bottom: insets.bottom + 148,
+          left: 0,
+          right: 0,
+        }}
       >
         {clusters.map((cluster, idx) =>
           cluster.hazards.length === 1 ? (
@@ -303,16 +408,28 @@ export default function MapScreen() {
         <Ionicons name="menu" size={22} color={Colors.text} />
       </Pressable>
 
-      {/* Top Right - Recenter location*/}
-      <Pressable
-        style={[
-          styles.recenterBtn,
-          { top: insets.top + (Platform.OS === "web" ? 67 : 12) },
-        ]}
-        onPress={handleRecenter}
-      >
-        <Ionicons name="locate" size={20} color={Colors.primary} />
-      </Pressable>
+      {showStepCounterChip && (
+        <View
+          style={[
+            styles.stepCounterCard,
+            { top: insets.top + (Platform.OS === "web" ? 67 : 12) },
+          ]}
+        >
+          <View style={styles.stepCounterIcon}>
+            {loadingStepCounter ? (
+              <ActivityIndicator size="small" color={Colors.primary} />
+            ) : (
+              <Ionicons name="footsteps" size={16} color={Colors.primary} />
+            )}
+          </View>
+          <View style={styles.stepCounterContent}>
+            <Text style={styles.stepCounterValue}>
+              {loadingStepCounter ? "..." : todaySteps.toLocaleString()}
+            </Text>
+            <Text style={styles.stepCounterLabel}>Today</Text>
+          </View>
+        </View>
+      )}
 
       {/* Safety Summary Overlay */}
       {showSummary && (
@@ -352,7 +469,12 @@ export default function MapScreen() {
 
         {/* Search Bar - Bottom Center */}
         <View style={styles.searchContainer}>
-          <SearchBar onSearch={handleSearch} />
+          <SearchBar
+            onSearch={handleSearch}
+            displayText={searchLocation}
+            onRecenter={handleRecenter}
+            recenterDisabled={!userLocation}
+          />
         </View>
 
         {/* Report Hazard - Bottom Right */}
