@@ -1,11 +1,11 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import {
+  buildRollingWeatherForecast,
+  type WeatherHourForecast,
+} from "./weatherWindow";
 
-export interface WeatherHourForecast {
-  time: string;
-  temperatureC: number;
-  weatherCode: number;
-  precipitationProbability: number | null;
-}
+export type { WeatherHourForecast } from "./weatherWindow";
+export { getMillisecondsUntilNextHour } from "./weatherWindow";
 
 export interface AreaWeatherReport {
   currentTime: string;
@@ -131,7 +131,7 @@ export async function fetchAreaWeather(
     latitude: lat.toFixed(6),
     longitude: lng.toFixed(6),
     timezone: "auto",
-    forecast_days: "1",
+    forecast_days: "2",
     wind_speed_unit: "kmh",
     current:
       "temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,is_day",
@@ -148,21 +148,20 @@ export async function fetchAreaWeather(
     throw new Error("Weather response missing required fields");
   }
 
-  const now = new Date(data.current.time).getTime();
-  const startIndex = Math.max(
-    0,
-    data.hourly.time.findIndex((time) => new Date(time).getTime() >= now),
-  );
-
-  const forecast = data.hourly.time
-    .slice(startIndex, startIndex + 8)
-    .map((time, index) => ({
-      time,
-      temperatureC: Math.round(data.hourly!.temperature_2m[startIndex + index]),
-      weatherCode: data.hourly!.weather_code[startIndex + index],
-      precipitationProbability:
-        data.hourly!.precipitation_probability?.[startIndex + index] ?? null,
-    }));
+  const forecast = buildRollingWeatherForecast({
+    current: {
+      time: data.current.time,
+      temperatureC: data.current.temperature_2m,
+      weatherCode: data.current.weather_code,
+      isDay: data.current.is_day === 1,
+    },
+    hourly: {
+      time: data.hourly.time,
+      temperatureC: data.hourly.temperature_2m,
+      weatherCode: data.hourly.weather_code,
+      precipitationProbability: data.hourly.precipitation_probability,
+    },
+  });
 
   return {
     currentTime: data.current.time,

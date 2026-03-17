@@ -8,7 +8,7 @@
     "build": "node scripts/build.js",
     "serve": "node server/serve.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test:unit": "tsc -p tsconfig.tests.json && node --test tests/hazardDetailSheet.test.js"
+    "test:unit": "tsc -p tsconfig.tests.json && node --test tests/hazardDetailSheet.test.js tests/weatherWindow.test.js"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

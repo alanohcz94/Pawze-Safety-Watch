@@ -86,11 +86,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: Colors.surface,
   },
+  currentForecastCard: {
+    backgroundColor: "#DDF2FF",
+    borderWidth: 1,
+    borderColor: "#9FD5FF",
+  },
   forecastTime: {
     fontSize: 12,
     fontFamily: "Inter_600SemiBold",
     color: Colors.text,
     marginBottom: 10,
+  },
+  currentForecastTime: {
+    color: "#175A9F",
   },
   precipitationText: {
     fontSize: 11,
@@ -98,17 +106,26 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     marginTop: 6,
   },
+  currentPrecipitationText: {
+    color: "#1E88E5",
+  },
   placeholderText: {
     height: 16,
     marginTop: 6,
     fontSize: 11,
     color: "transparent",
   },
+  currentPlaceholderText: {
+    color: "#5B9ED4",
+  },
   forecastTemp: {
     fontSize: 16,
     fontFamily: "Inter_700Bold",
     color: Colors.text,
     marginTop: 6,
+  },
+  currentForecastTemp: {
+    color: "#175A9F",
   },
   loadingIcon: {
     width: 24,

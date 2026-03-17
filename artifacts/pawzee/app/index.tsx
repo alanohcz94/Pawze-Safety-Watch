@@ -40,7 +40,11 @@ import { EmergencyVetSheet } from "@/components/EmergencyVetSheet";
 import { SafetySummaryDashboard } from "@/components/SafetySummary";
 import { WeatherReportBar } from "@/components/WeatherReportBar";
 import { useSettings } from "@/lib/settings";
-import { fetchAreaWeather, type AreaWeatherReport } from "@/lib/weather";
+import {
+  fetchAreaWeather,
+  getMillisecondsUntilNextHour,
+  type AreaWeatherReport,
+} from "@/lib/weather";
 
 function clusterHazards(
   hazards: HazardItem[],
@@ -171,6 +175,7 @@ export default function MapScreen() {
   const [loadingSearchedAreaWeather, setLoadingSearchedAreaWeather] =
     useState(false);
   const [showWeatherDashboard, setShowWeatherDashboard] = useState(true);
+  const [weatherRefreshKey, setWeatherRefreshKey] = useState(0);
 
   const [queryCenter, setQueryCenter] = useState<{
     lat: number;
@@ -253,6 +258,25 @@ export default function MapScreen() {
 
     return () => clearTimeout(timeout);
   }, [stepCounter, stepCounterDayKey]);
+
+  useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+
+    const scheduleNextWeatherRefresh = () => {
+      timeout = setTimeout(() => {
+        setWeatherRefreshKey(Date.now());
+        scheduleNextWeatherRefresh();
+      }, getMillisecondsUntilNextHour());
+    };
+
+    scheduleNextWeatherRefresh();
+
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!stepCounter) {
@@ -401,7 +425,7 @@ export default function MapScreen() {
     return () => {
       isActive = false;
     };
-  }, [locationReady, userLocation?.lat, userLocation?.lng]);
+  }, [locationReady, userLocation?.lat, userLocation?.lng, weatherRefreshKey]);
 
   useEffect(() => {
     if (!queryCenter) {
@@ -488,7 +512,7 @@ export default function MapScreen() {
     return () => {
       isActive = false;
     };
-  }, [queryCenter?.lat, queryCenter?.lng]);
+  }, [queryCenter?.lat, queryCenter?.lng, weatherRefreshKey]);
 
   const clusters = clusterHazards(hazards, zoomLevel);
 

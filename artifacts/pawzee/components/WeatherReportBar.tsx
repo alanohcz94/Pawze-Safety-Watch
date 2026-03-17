@@ -6,7 +6,6 @@ import {
   type AreaWeatherReport,
   formatForecastHour,
   getWeatherVisual,
-  getWindDirectionLabel,
 } from "@/lib/weather";
 import { styles } from "./componentStyleSheet/StyleSheetWeatherReportBar";
 
@@ -15,64 +14,21 @@ interface WeatherReportBarProps {
   loading?: boolean;
 }
 
+const CURRENT_HOUR_ICON_COLOR = "#1E88E5";
+
 export function WeatherReportBar({
   weather,
   loading = false,
 }: WeatherReportBarProps) {
-  const currentVisual = weather
-    ? getWeatherVisual(weather.currentWeatherCode, weather.currentIsDay)
-    : null;
-  const currentWindDirection = weather
-    ? getWindDirectionLabel(weather.currentWindDirectionDeg)
-    : null;
-
   return (
     <View style={styles.container}>
-      {/* <View style={styles.header}>
-        <View style={styles.headerTopRow}>
-          <View style={styles.currentPill}>
-            <Text style={styles.currentTemp}>
-              {loading ? "--" : weather ? `${weather.currentTempC}°` : "--"}
-            </Text>
-            <Text style={styles.currentLabel}>Now</Text>
-          </View>
-
-          <View style={styles.headerTextWrap}>
-            <Text style={styles.title}>
-              {loading
-                ? "Updating weather..."
-                : currentVisual?.label ?? "Weather unavailable"}
-            </Text>
-            <Text style={styles.subtitle}>
-              {loading
-                ? "Pulling the latest forecast for this area."
-                : weather
-                  ? `Wind from ${currentWindDirection} at ${weather.currentWindSpeedKmh} km/h`
-                  : "Unable to load the weather report right now."}
-            </Text>
-          </View>
-
-          {currentVisual && (
-            <View style={styles.currentIconWrap}>
-              <MaterialCommunityIcons
-                name={currentVisual.iconName}
-                size={24}
-                color={Colors.primary}
-              />
-            </View>
-          )}
-        </View>
-      </View> */}
-
-      {/* <View style={styles.divider} /> */}
-
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.forecastRow}
       >
         {loading ? (
-          Array.from({ length: 6 }).map((_, index) => (
+          Array.from({ length: 8 }).map((_, index) => (
             <View key={`weather-loading-${index}`} style={styles.forecastCard}>
               <Text style={styles.forecastTime}>--</Text>
               <View style={styles.loadingIcon} />
@@ -81,11 +37,23 @@ export function WeatherReportBar({
           ))
         ) : weather?.forecast.length ? (
           weather.forecast.map((hour) => {
-            const visual = getWeatherVisual(hour.weatherCode, true);
+            const isCurrentHour = hour.isCurrentHour;
+            const visual = getWeatherVisual(hour.weatherCode, hour.isDay);
 
             return (
-              <View key={hour.time} style={styles.forecastCard}>
-                <Text style={styles.forecastTime}>
+              <View
+                key={hour.time}
+                style={[
+                  styles.forecastCard,
+                  isCurrentHour && styles.currentForecastCard,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.forecastTime,
+                    isCurrentHour && styles.currentForecastTime,
+                  ]}
+                >
                   {formatForecastHour(hour.time)}
                 </Text>
 
@@ -93,23 +61,45 @@ export function WeatherReportBar({
                   name={visual.iconName}
                   size={22}
                   color={
-                    hour.precipitationProbability &&
-                    hour.precipitationProbability > 0
-                      ? Colors.primary
-                      : Colors.warning
+                    isCurrentHour
+                      ? CURRENT_HOUR_ICON_COLOR
+                      : hour.precipitationProbability &&
+                          hour.precipitationProbability > 0
+                        ? Colors.primary
+                        : Colors.warning
                   }
                 />
 
                 {hour.precipitationProbability != null &&
                 hour.precipitationProbability > 0 ? (
-                  <Text style={styles.precipitationText}>
+                  <Text
+                    style={[
+                      styles.precipitationText,
+                      isCurrentHour && styles.currentPrecipitationText,
+                    ]}
+                  >
                     {hour.precipitationProbability}%
                   </Text>
                 ) : (
-                  <Text style={styles.placeholderText}> </Text>
+                  <Text
+                    style={[
+                      styles.placeholderText,
+                      isCurrentHour && styles.currentPlaceholderText,
+                    ]}
+                  >
+                    0%
+                  </Text>
                 )}
 
-                <Text style={styles.forecastTemp}>{hour.temperatureC}°</Text>
+                <Text
+                  style={[
+                    styles.forecastTemp,
+                    isCurrentHour && styles.currentForecastTemp,
+                  ]}
+                >
+                  {hour.temperatureC}
+                  {"\u00B0"}
+                </Text>
               </View>
             );
           })
