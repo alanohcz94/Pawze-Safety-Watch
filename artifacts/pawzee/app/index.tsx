@@ -515,16 +515,19 @@ export default function MapScreen() {
           HAZARD_CONFIGS.other;
         const distText =
           dist < 1000
-            ? `${Math.round(dist)}m`
-            : `${(dist / 1000).toFixed(1)}km`;
-        const coords = `${hazard.lat.toFixed(4)}, ${hazard.lng.toFixed(4)}`;
-        Notifications.scheduleNotificationAsync({
-          content: {
-            title: `⚠️ ${config.label} Nearby`,
-            body: `${distText} from you (${coords}). Keep an eye out and stay safe!`,
+            ? `${Math.round(dist)}m away`
+            : `${(dist / 1000).toFixed(1)}km away`;
+        resolveAreaName(hazard.lat, hazard.lng, "nearby location").then(
+          (address) => {
+            Notifications.scheduleNotificationAsync({
+              content: {
+                title: config.label,
+                body: `${distText} · ${address}`,
+              },
+              trigger: null,
+            }).catch(() => {});
           },
-          trigger: null,
-        }).catch(() => {});
+        );
       }
     });
   }, [hazards, userLocation, notifications, alertRadiusMeters]);
