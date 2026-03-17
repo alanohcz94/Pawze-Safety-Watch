@@ -10,13 +10,19 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Colors.background,
-    gap: 16,
+    backgroundColor: "#000000",
+    gap: 20,
+  },
+  loadingLogo: {
+    width: 120,
+    height: 120,
+    tintColor: "#FFFFFF",
   },
   loadingText: {
     fontSize: 16,
     fontFamily: "Inter_500Medium",
-    color: Colors.textSecondary,
+    color: "#FFFFFF",
+    opacity: 0.7,
   },
   map: {
     flex: 1,

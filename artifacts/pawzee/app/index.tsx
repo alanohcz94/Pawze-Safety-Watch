@@ -5,7 +5,9 @@ import {
   Pressable,
   Platform,
   ActivityIndicator,
+  Image,
 } from "react-native";
+import * as Notifications from "expo-notifications";
 import MapViewWrapper from "@/components/MapViewWrapper";
 import type MapView from "react-native-maps";
 import { styles } from "./indexStyleSheet";
@@ -24,7 +26,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import { fetchHazards, fetchHazardSummary } from "@/lib/api";
 import type { HazardItem, HazardSummary } from "@/lib/api";
-import { haversineDistance } from "@/lib/hazards";
+import { haversineDistance, HAZARD_CONFIGS, type HazardCategory } from "@/lib/hazards";
 import {
   getPedometerStepCountAsync,
   isPedometerAvailableAsync,
@@ -33,6 +35,7 @@ import {
   watchPedometerStepCount,
 } from "@/lib/pedometer";
 import { HazardMarker, ClusterMarker } from "@/components/HazardMarker";
+import { Marker } from "@/components/MapViewWrapper";
 import { HazardDetailSheet } from "@/components/HazardDetailSheet";
 import { SearchBar, type SearchResult } from "@/components/SearchBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
@@ -135,8 +138,9 @@ export default function MapScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const mapRef = useRef<MapView>(null);
-  const { alertRadius, stepCounter } = useSettings();
+  const { alertRadius, stepCounter, notifications } = useSettings();
   const alertRadiusMeters = alertRadius;
+  const notifiedHazardsRef = useRef<Set<number>>(new Set());
 
   const [region, setRegion] = useState<Region>(DEFAULT_REGION);
   const [userLocation, setUserLocation] = useState<{
@@ -176,6 +180,11 @@ export default function MapScreen() {
     useState(false);
   const [showWeatherDashboard, setShowWeatherDashboard] = useState(true);
   const [weatherRefreshKey, setWeatherRefreshKey] = useState(0);
+  const [searchPin, setSearchPin] = useState<{
+    lat: number;
+    lng: number;
+    label: string;
+  } | null>(null);
 
   const [queryCenter, setQueryCenter] = useState<{
     lat: number;
@@ -472,6 +481,54 @@ export default function MapScreen() {
   }, [queryCenter?.lat, queryCenter?.lng, alertRadiusMeters]);
 
   useEffect(() => {
+    if (Platform.OS === "web") return;
+    Notifications.requestPermissionsAsync().catch(() => {});
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+      }),
+    });
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    if (!notifications) return;
+    if (!userLocation || hazards.length === 0) return;
+
+    hazards.forEach((hazard) => {
+      if (notifiedHazardsRef.current.has(hazard.id)) return;
+
+      const dist = haversineDistance(
+        userLocation.lat,
+        userLocation.lng,
+        hazard.lat,
+        hazard.lng,
+      );
+
+      if (dist <= alertRadiusMeters) {
+        notifiedHazardsRef.current.add(hazard.id);
+        const config =
+          HAZARD_CONFIGS[hazard.category as HazardCategory] ??
+          HAZARD_CONFIGS.other;
+        const distText =
+          dist < 1000
+            ? `${Math.round(dist)}m away`
+            : `${(dist / 1000).toFixed(1)}km away`;
+        Notifications.scheduleNotificationAsync({
+          content: {
+            title: `⚠️ ${config.label} Nearby`,
+            body: `A hazard is ${distText}. Stay safe on your walk!`,
+          },
+          trigger: null,
+        }).catch(() => {});
+      }
+    });
+  }, [hazards, userLocation, notifications, alertRadiusMeters]);
+
+  useEffect(() => {
     if (!queryCenter) {
       setSearchedAreaWeather(null);
       setLoadingSearchedAreaWeather(false);
@@ -561,6 +618,7 @@ export default function MapScreen() {
     setSearchLocation(label);
     setSearchedAreaName(label);
     setQueryCenter({ lat: latitude, lng: longitude });
+    setSearchPin({ lat: latitude, lng: longitude, label });
   };
 
   const handleReportPress = () => {
@@ -591,6 +649,7 @@ export default function MapScreen() {
     setSearchedAreaSummary(null);
     setSearchedAreaWeather(null);
     setQueryCenter(null);
+    setSearchPin(null);
   };
 
   const handleSafetySummaryViewChange = useCallback(
@@ -622,7 +681,12 @@ export default function MapScreen() {
   if (!locationReady) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.primary} />
+        <Image
+          source={require("../assets/images/logo.png")}
+          style={styles.loadingLogo}
+          resizeMode="contain"
+        />
+        <ActivityIndicator size="large" color="#FFFFFF" />
         <Text style={styles.loadingText}>Finding your location...</Text>
       </View>
     );
@@ -660,6 +724,13 @@ export default function MapScreen() {
               onPress={() => handleClusterPress(cluster)}
             />
           ),
+        )}
+        {searchPin && (
+          <Marker
+            coordinate={{ latitude: searchPin.lat, longitude: searchPin.lng }}
+            title={searchPin.label}
+            pinColor="#1A9E8F"
+          />
         )}
       </MapViewWrapper>
 

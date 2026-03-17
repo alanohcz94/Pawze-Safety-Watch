@@ -77,8 +77,9 @@ Expo React Native mobile app — map-first dog walk safety app.
 - `lib/hazards.ts` — Hazard category configs, icons, formatters (time ago, distance, etc.)
 - `constants/colors.ts` — Pawzee teal/coral color palette
 - Components: HazardIcon, HazardMarker, HazardDetailSheet, SearchBar, ProfileMenu, EmergencyVetSheet, SafetySummary, MapViewWrapper
-- Key deps: react-native-maps@1.18.0 (pinned for Expo Go), expo-location, expo-image-picker, expo-haptics
+- Key deps: react-native-maps@1.18.0 (pinned for Expo Go), expo-location, expo-image-picker, expo-haptics, expo-notifications
 - Web compatibility: `.web.tsx` files provide stubs for native-only modules (react-native-maps)
+- Map provider: PROVIDER_GOOGLE in MapViewWrapper.tsx
 
 ### `lib/db` (`@workspace/db`)
 
@@ -120,3 +121,6 @@ Utility scripts package. Run via `pnpm --filter @workspace/scripts run <script>`
 - **Vet sheet**: Singapore 24/7 ER vet fallback numbers always shown when in SG area
 - **Hazard radius**: 3km (fetchHazards and fetchHazardSummary)
 - **Icon fixes**: ticks_fleas uses yellow (#CA8A04), ant_nest uses "bug-outline" (valid MCIcon)
+- **Branding**: splash + app icon both use logo.png, black (#000000) loading screen with white logo
+- **Search pin**: teal (#1A9E8F) Marker shown on map when user searches a location; cleared on recenter
+- **Proximity notifications**: expo-notifications fires local alert when a hazard is within alertRadiusMeters; tracks notified hazard IDs in a ref to avoid duplicate alerts; only fires when "notifications" setting is enabled

@@ -1,5 +1,5 @@
 import React from "react";
-import MapView, { Marker, PROVIDER_DEFAULT } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 
 interface MapViewWrapperProps {
   children?: React.ReactNode;
@@ -9,7 +9,7 @@ interface MapViewWrapperProps {
 const MapViewWrapper = React.forwardRef<MapView, MapViewWrapperProps>(
   ({ children, style, ...props }, ref) => {
     return (
-      <MapView ref={ref} style={style} provider={PROVIDER_DEFAULT} {...props}>
+      <MapView ref={ref} style={style} provider={PROVIDER_GOOGLE} {...props}>
         {children}
       </MapView>
     );
