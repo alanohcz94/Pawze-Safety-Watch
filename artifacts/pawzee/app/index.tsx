@@ -482,7 +482,6 @@ export default function MapScreen() {
 
   useEffect(() => {
     if (Platform.OS === "web") return;
-    Notifications.requestPermissionsAsync().catch(() => {});
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowBanner: true,
@@ -491,6 +490,13 @@ export default function MapScreen() {
         shouldSetBadge: false,
       }),
     });
+    Notifications.getPermissionsAsync()
+      .then(({ status }) => {
+        if (status !== "granted") {
+          return Notifications.requestPermissionsAsync();
+        }
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {

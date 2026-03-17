@@ -16,7 +16,6 @@ const styles = StyleSheet.create({
   loadingLogo: {
     width: 120,
     height: 120,
-    tintColor: "#FFFFFF",
   },
   loadingText: {
     fontSize: 16,
