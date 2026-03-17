@@ -50,6 +50,7 @@ interface HazardExpiryInput {
   reportedAt: Date;
   photoUrl?: string | null;
   confirmationCount: number;
+  refreshAt?: Date;
 }
 
 export function getHazardRule(category: string): HazardRule {
@@ -61,9 +62,14 @@ export function calculateHazardExpiry({
   reportedAt,
   photoUrl,
   confirmationCount,
+  refreshAt,
 }: HazardExpiryInput): Date {
   const hasPhoto = typeof photoUrl === "string" && photoUrl.trim().length > 0;
   const { baseExpiryMs } = getHazardRule(category);
+  const anchorAt =
+    refreshAt && refreshAt.getTime() > reportedAt.getTime()
+      ? refreshAt
+      : reportedAt;
 
   let adjustedExpiryMs = baseExpiryMs;
   if (confirmationCount > 0) {
@@ -73,6 +79,6 @@ export function calculateHazardExpiry({
   }
 
   return new Date(
-    reportedAt.getTime() + Math.min(adjustedExpiryMs, MAX_EXPIRY_MS),
+    anchorAt.getTime() + Math.min(adjustedExpiryMs, MAX_EXPIRY_MS),
   );
 }

@@ -261,11 +261,13 @@ router.post("/hazards/:id/confirm", async (req: Request, res: Response) => {
   });
 
   const nextConfirmationCount = hazard.confirmationCount + 1;
+  const confirmedAt = new Date();
   const nextExpiresAt = calculateHazardExpiry({
     category: hazard.category,
     reportedAt: hazard.reportedAt,
     photoUrl: hazard.photoUrl,
     confirmationCount: nextConfirmationCount,
+    refreshAt: confirmedAt,
   });
 
   const [updated] = await db
@@ -337,6 +339,7 @@ router.patch("/hazards/:id/photo", async (req: Request, res: Response) => {
         reportedAt: hazard.reportedAt,
         photoUrl,
         confirmationCount: hazard.confirmationCount,
+        refreshAt: new Date(),
       }),
     })
     .where(eq(hazardsTable.id, hazardId))
