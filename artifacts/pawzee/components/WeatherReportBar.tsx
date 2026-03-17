@@ -28,7 +28,7 @@ export function WeatherReportBar({
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      {/* <View style={styles.header}>
         <View style={styles.headerTopRow}>
           <View style={styles.currentPill}>
             <Text style={styles.currentTemp}>
@@ -62,9 +62,9 @@ export function WeatherReportBar({
             </View>
           )}
         </View>
-      </View>
+      </View> */}
 
-      <View style={styles.divider} />
+      {/* <View style={styles.divider} /> */}
 
       <ScrollView
         horizontal
