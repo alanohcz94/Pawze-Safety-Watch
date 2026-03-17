@@ -139,8 +139,8 @@ export default function MapScreen() {
   const queryClient = useQueryClient();
   const mapRef = useRef<MapView>(null);
   const { alertRadius, stepCounter, notifications } = useSettings();
-  const alertRadiusMeters = alertRadius;
-  const notifiedHazardsRef = useRef<Set<number>>(new Set());
+  const alertRadiusMeters = alertRadius * 1000;
+  const notifiedHazardsRef = useRef<Set<string>>(new Set());
 
   const [region, setRegion] = useState<Region>(DEFAULT_REGION);
   const [userLocation, setUserLocation] = useState<{
@@ -515,12 +515,13 @@ export default function MapScreen() {
           HAZARD_CONFIGS.other;
         const distText =
           dist < 1000
-            ? `${Math.round(dist)}m away`
-            : `${(dist / 1000).toFixed(1)}km away`;
+            ? `${Math.round(dist)}m`
+            : `${(dist / 1000).toFixed(1)}km`;
+        const coords = `${hazard.lat.toFixed(4)}, ${hazard.lng.toFixed(4)}`;
         Notifications.scheduleNotificationAsync({
           content: {
             title: `⚠️ ${config.label} Nearby`,
-            body: `A hazard is ${distText}. Stay safe on your walk!`,
+            body: `${distText} from you (${coords}). Keep an eye out and stay safe!`,
           },
           trigger: null,
         }).catch(() => {});
