@@ -170,6 +170,7 @@ export default function MapScreen() {
     useState<AreaWeatherReport | null>(null);
   const [loadingSearchedAreaWeather, setLoadingSearchedAreaWeather] =
     useState(false);
+  const [showWeatherDashboard, setShowWeatherDashboard] = useState(true);
 
   const [queryCenter, setQueryCenter] = useState<{
     lat: number;
@@ -568,6 +569,13 @@ export default function MapScreen() {
     setQueryCenter(null);
   };
 
+  const handleSafetySummaryViewChange = useCallback(
+    (view: "summary" | "breakdown") => {
+      setShowWeatherDashboard(view !== "breakdown");
+    },
+    [],
+  );
+
   const showStepCounterChip =
     stepCounter && (loadingStepCounter || showStepCounter);
   const showingSearchArea = Boolean(queryCenter);
@@ -711,15 +719,18 @@ export default function MapScreen() {
             loading={activeAreaSummaryLoading}
             showingSearchLocation={showingSearchArea}
             onBackToCurrentLocation={handleRecenter}
+            onViewChange={handleSafetySummaryViewChange}
           />
         </View>
 
-        <View style={styles.dashboardContainer}>
-          <WeatherReportBar
-            weather={activeAreaWeather}
-            loading={activeAreaWeatherLoading}
-          />
-        </View>
+        {showWeatherDashboard && (
+          <View style={styles.dashboardContainer}>
+            <WeatherReportBar
+              weather={activeAreaWeather}
+              loading={activeAreaWeatherLoading}
+            />
+          </View>
+        )}
       </View>
 
       {/* Sheets */}

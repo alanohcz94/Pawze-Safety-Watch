@@ -13,6 +13,7 @@ interface SafetySummaryProps {
   loading?: boolean;
   showingSearchLocation?: boolean;
   onBackToCurrentLocation?: () => void;
+  onViewChange?: (view: SummaryView) => void;
 }
 
 type SummaryView = "summary" | "breakdown";
@@ -23,12 +24,17 @@ export function SafetySummaryDashboard({
   locationName,
   showingSearchLocation = false,
   onBackToCurrentLocation,
+  onViewChange,
 }: SafetySummaryProps) {
   const [view, setView] = useState<SummaryView>("summary");
 
   useEffect(() => {
     setView("summary");
   }, [locationName, loading, summary?.hazardsToday, summary?.activeHazards]);
+
+  useEffect(() => {
+    onViewChange?.(view);
+  }, [onViewChange, view]);
 
   const breakdownEntries = useMemo(
     () =>
