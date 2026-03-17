@@ -25,7 +25,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import { fetchHazards, fetchHazardSummary } from "@/lib/api";
-import type { HazardItem, HazardSummary } from "@/lib/api";
+import type { HazardItem } from "@/lib/api";
 import { haversineDistance, HAZARD_CONFIGS, type HazardCategory } from "@/lib/hazards";
 import {
   getPedometerStepCountAsync,
@@ -46,8 +46,12 @@ import { useSettings } from "@/lib/settings";
 import {
   fetchAreaWeather,
   getMillisecondsUntilNextHour,
-  type AreaWeatherReport,
+  getWeatherCacheWindowKey,
+  WEATHER_CACHE_DURATION_MS,
 } from "@/lib/weather";
+import { queryKeys } from "@/lib/queryKeys";
+
+const EMPTY_HAZARDS: HazardItem[] = [];
 
 function clusterHazards(
   hazards: HazardItem[],
@@ -134,15 +138,90 @@ async function resolveAreaName(
   }
 }
 
+interface HazardMapProps {
+  hazards: HazardItem[];
+  initialRegion: Region;
+  mapPaddingTop: number;
+  mapPaddingBottom: number;
+  mapRef: React.RefObject<MapView | null>;
+  onClusterPress: (cluster: ClusterGroup) => void;
+  onHazardPress: (hazard: HazardItem) => void;
+  onRegionChangeComplete: (region: Region) => void;
+  searchPin: {
+    lat: number;
+    lng: number;
+    label: string;
+  } | null;
+  zoomLevel: number;
+}
+
+const HazardMap = React.memo(function HazardMap({
+  hazards,
+  initialRegion,
+  mapPaddingBottom,
+  mapPaddingTop,
+  mapRef,
+  onClusterPress,
+  onHazardPress,
+  onRegionChangeComplete,
+  searchPin,
+  zoomLevel,
+}: HazardMapProps) {
+  const clusters = clusterHazards(hazards, zoomLevel);
+
+  return (
+    <MapViewWrapper
+      ref={mapRef}
+      style={styles.map}
+      initialRegion={initialRegion}
+      onRegionChangeComplete={onRegionChangeComplete}
+      showsUserLocation
+      showsMyLocationButton={false}
+      showsCompass={false}
+      mapPadding={{
+        top: mapPaddingTop,
+        bottom: mapPaddingBottom,
+        left: 0,
+        right: 0,
+      }}
+    >
+      {clusters.map((cluster, idx) =>
+        cluster.hazards.length === 1 ? (
+          <HazardMarker
+            key={cluster.hazards[0].id}
+            hazard={cluster.hazards[0]}
+            onPress={onHazardPress}
+          />
+        ) : (
+          <ClusterMarker
+            key={`cluster-${idx}`}
+            count={cluster.hazards.length}
+            coordinate={{ latitude: cluster.lat, longitude: cluster.lng }}
+            onPress={() => onClusterPress(cluster)}
+          />
+        ),
+      )}
+      {searchPin && (
+        <Marker
+          coordinate={{ latitude: searchPin.lat, longitude: searchPin.lng }}
+          title={searchPin.label}
+          pinColor="#1A9E8F"
+        />
+      )}
+    </MapViewWrapper>
+  );
+});
+
 export default function MapScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const mapRef = useRef<MapView>(null);
+  const regionRef = useRef<Region>(DEFAULT_REGION);
   const { alertRadius, stepCounter, notifications } = useSettings();
   const alertRadiusMeters = alertRadius * 1000;
   const notifiedHazardsRef = useRef<Set<string>>(new Set());
 
-  const [region, setRegion] = useState<Region>(DEFAULT_REGION);
+  const [initialRegion, setInitialRegion] = useState<Region>(DEFAULT_REGION);
   const [userLocation, setUserLocation] = useState<{
     lat: number;
     lng: number;
@@ -160,26 +239,12 @@ export default function MapScreen() {
   const [stepCounterDayKey, setStepCounterDayKey] = useState(() =>
     new Date().toDateString(),
   );
-  const [currentAreaSummary, setCurrentAreaSummary] =
-    useState<HazardSummary | null>(null);
   const [currentAreaName, setCurrentAreaName] = useState("Current area");
-  const [loadingCurrentAreaSummary, setLoadingCurrentAreaSummary] =
-    useState(false);
-  const [searchedAreaSummary, setSearchedAreaSummary] =
-    useState<HazardSummary | null>(null);
   const [searchedAreaName, setSearchedAreaName] = useState("");
-  const [loadingSearchedAreaSummary, setLoadingSearchedAreaSummary] =
-    useState(false);
-  const [currentAreaWeather, setCurrentAreaWeather] =
-    useState<AreaWeatherReport | null>(null);
-  const [loadingCurrentAreaWeather, setLoadingCurrentAreaWeather] =
-    useState(false);
-  const [searchedAreaWeather, setSearchedAreaWeather] =
-    useState<AreaWeatherReport | null>(null);
-  const [loadingSearchedAreaWeather, setLoadingSearchedAreaWeather] =
-    useState(false);
   const [showWeatherDashboard, setShowWeatherDashboard] = useState(true);
-  const [weatherRefreshKey, setWeatherRefreshKey] = useState(0);
+  const [weatherCacheWindowKey, setWeatherCacheWindowKey] = useState(() =>
+    getWeatherCacheWindowKey(),
+  );
   const [searchPin, setSearchPin] = useState<{
     lat: number;
     lng: number;
@@ -191,15 +256,67 @@ export default function MapScreen() {
     lng: number;
   } | null>(null);
 
-  const centerLat =
-    queryCenter?.lat ?? userLocation?.lat ?? DEFAULT_REGION.latitude;
-  const centerLng =
-    queryCenter?.lng ?? userLocation?.lng ?? DEFAULT_REGION.longitude;
+  const currentAreaLat = userLocation?.lat ?? DEFAULT_REGION.latitude;
+  const currentAreaLng = userLocation?.lng ?? DEFAULT_REGION.longitude;
+  const searchedAreaLat = queryCenter?.lat ?? DEFAULT_REGION.latitude;
+  const searchedAreaLng = queryCenter?.lng ?? DEFAULT_REGION.longitude;
+  const centerLat = queryCenter?.lat ?? currentAreaLat;
+  const centerLng = queryCenter?.lng ?? currentAreaLng;
 
-  const { data: hazards = [], refetch: refetchHazards } = useQuery({
-    queryKey: ["hazards", centerLat, centerLng, alertRadiusMeters],
+  const { data: hazards = EMPTY_HAZARDS } = useQuery({
+    queryKey: queryKeys.hazards.list(centerLat, centerLng, alertRadiusMeters),
     queryFn: () => fetchHazards(centerLat, centerLng, alertRadiusMeters),
     refetchInterval: 30000,
+  });
+  const { data: currentAreaSummary = null, isLoading: loadingCurrentAreaSummary } =
+    useQuery({
+      queryKey: queryKeys.hazardSummary.detail(
+        currentAreaLat,
+        currentAreaLng,
+        alertRadiusMeters,
+      ),
+      queryFn: () =>
+        fetchHazardSummary(currentAreaLat, currentAreaLng, alertRadiusMeters),
+      enabled: locationReady,
+    });
+  const {
+    data: searchedAreaSummary = null,
+    isLoading: loadingSearchedAreaSummary,
+  } = useQuery({
+    queryKey: queryKeys.hazardSummary.detail(
+      searchedAreaLat,
+      searchedAreaLng,
+      alertRadiusMeters,
+    ),
+    queryFn: () =>
+      fetchHazardSummary(searchedAreaLat, searchedAreaLng, alertRadiusMeters),
+    enabled: !!queryCenter,
+  });
+  const { data: currentAreaWeather = null, isLoading: loadingCurrentAreaWeather } =
+    useQuery({
+      queryKey: queryKeys.areaWeather.detail(
+        currentAreaLat,
+        currentAreaLng,
+        weatherCacheWindowKey,
+      ),
+      queryFn: () => fetchAreaWeather(currentAreaLat, currentAreaLng),
+      enabled: locationReady,
+      staleTime: WEATHER_CACHE_DURATION_MS,
+      gcTime: WEATHER_CACHE_DURATION_MS,
+    });
+  const {
+    data: searchedAreaWeather = null,
+    isLoading: loadingSearchedAreaWeather,
+  } = useQuery({
+    queryKey: queryKeys.areaWeather.detail(
+      searchedAreaLat,
+      searchedAreaLng,
+      weatherCacheWindowKey,
+    ),
+    queryFn: () => fetchAreaWeather(searchedAreaLat, searchedAreaLng),
+    enabled: !!queryCenter,
+    staleTime: WEATHER_CACHE_DURATION_MS,
+    gcTime: WEATHER_CACHE_DURATION_MS,
   });
 
   useEffect(() => {
@@ -235,11 +352,12 @@ export default function MapScreen() {
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
         };
+        regionRef.current = newRegion;
         setUserLocation({
           lat: loc.coords.latitude,
           lng: loc.coords.longitude,
         });
-        setRegion(newRegion);
+        setInitialRegion(newRegion);
         mapRef.current?.animateToRegion(newRegion, 500);
       } catch {}
       setLocationReady(true);
@@ -273,7 +391,7 @@ export default function MapScreen() {
 
     const scheduleNextWeatherRefresh = () => {
       timeout = setTimeout(() => {
-        setWeatherRefreshKey(Date.now());
+        setWeatherCacheWindowKey(getWeatherCacheWindowKey());
         scheduleNextWeatherRefresh();
       }, getMillisecondsUntilNextHour());
     };
@@ -357,128 +475,32 @@ export default function MapScreen() {
       return;
     }
 
-    const lat = userLocation?.lat ?? DEFAULT_REGION.latitude;
-    const lng = userLocation?.lng ?? DEFAULT_REGION.longitude;
     let isActive = true;
 
-    const loadCurrentAreaSummary = async () => {
-      setLoadingCurrentAreaSummary(true);
-
+    const loadCurrentAreaName = async () => {
       try {
-        const [summaryData, locationName] = await Promise.all([
-          fetchHazardSummary(lat, lng, alertRadiusMeters),
-          resolveAreaName(lat, lng, "Current area"),
-        ]);
-
-        if (!isActive) {
-          return;
-        }
-
-        setCurrentAreaSummary(summaryData);
-        setCurrentAreaName(locationName);
-      } catch {
-        if (!isActive) {
-          return;
-        }
-
-        setCurrentAreaSummary(null);
-        setCurrentAreaName("Current area");
-      } finally {
-        if (isActive) {
-          setLoadingCurrentAreaSummary(false);
-        }
-      }
-    };
-
-    loadCurrentAreaSummary();
-
-    return () => {
-      isActive = false;
-    };
-  }, [locationReady, userLocation?.lat, userLocation?.lng, alertRadiusMeters]);
-
-  useEffect(() => {
-    if (!locationReady) {
-      return;
-    }
-
-    const lat = userLocation?.lat ?? DEFAULT_REGION.latitude;
-    const lng = userLocation?.lng ?? DEFAULT_REGION.longitude;
-    let isActive = true;
-
-    const loadCurrentAreaWeather = async () => {
-      setLoadingCurrentAreaWeather(true);
-
-      try {
-        const weatherData = await fetchAreaWeather(lat, lng);
-        if (!isActive) {
-          return;
-        }
-
-        setCurrentAreaWeather(weatherData);
-      } catch {
-        if (!isActive) {
-          return;
-        }
-
-        setCurrentAreaWeather(null);
-      } finally {
-        if (isActive) {
-          setLoadingCurrentAreaWeather(false);
-        }
-      }
-    };
-
-    loadCurrentAreaWeather();
-
-    return () => {
-      isActive = false;
-    };
-  }, [locationReady, userLocation?.lat, userLocation?.lng, weatherRefreshKey]);
-
-  useEffect(() => {
-    if (!queryCenter) {
-      setSearchedAreaSummary(null);
-      setLoadingSearchedAreaSummary(false);
-      return;
-    }
-
-    let isActive = true;
-
-    const loadSearchedAreaSummary = async () => {
-      setLoadingSearchedAreaSummary(true);
-
-      try {
-        const summaryData = await fetchHazardSummary(
-          queryCenter.lat,
-          queryCenter.lng,
-          alertRadiusMeters,
+        const locationName = await resolveAreaName(
+          currentAreaLat,
+          currentAreaLng,
+          "Current area",
         );
 
-        if (!isActive) {
-          return;
-        }
-
-        setSearchedAreaSummary(summaryData);
-      } catch {
-        if (!isActive) {
-          return;
-        }
-
-        setSearchedAreaSummary(null);
-      } finally {
         if (isActive) {
-          setLoadingSearchedAreaSummary(false);
+          setCurrentAreaName(locationName);
+        }
+      } catch {
+        if (isActive) {
+          setCurrentAreaName("Current area");
         }
       }
     };
 
-    loadSearchedAreaSummary();
+    loadCurrentAreaName();
 
     return () => {
       isActive = false;
     };
-  }, [queryCenter?.lat, queryCenter?.lng, alertRadiusMeters]);
+  }, [locationReady, currentAreaLat, currentAreaLng]);
 
   useEffect(() => {
     if (Platform.OS === "web") return;
@@ -538,82 +560,44 @@ export default function MapScreen() {
     });
   }, [hazards, userLocation, notifications, alertRadiusMeters]);
 
-  useEffect(() => {
-    if (!queryCenter) {
-      setSearchedAreaWeather(null);
-      setLoadingSearchedAreaWeather(false);
-      return;
-    }
-
-    let isActive = true;
-
-    const loadSearchedAreaWeather = async () => {
-      setLoadingSearchedAreaWeather(true);
-
-      try {
-        const weatherData = await fetchAreaWeather(
-          queryCenter.lat,
-          queryCenter.lng,
-        );
-
-        if (!isActive) {
-          return;
-        }
-
-        setSearchedAreaWeather(weatherData);
-      } catch {
-        if (!isActive) {
-          return;
-        }
-
-        setSearchedAreaWeather(null);
-      } finally {
-        if (isActive) {
-          setLoadingSearchedAreaWeather(false);
-        }
-      }
-    };
-
-    loadSearchedAreaWeather();
-
-    return () => {
-      isActive = false;
-    };
-  }, [queryCenter?.lat, queryCenter?.lng, weatherRefreshKey]);
-
-  const clusters = clusterHazards(hazards, zoomLevel);
-
   const handleRegionChange = useCallback((newRegion: Region) => {
-    setRegion(newRegion);
-    setZoomLevel(getZoomLevel(newRegion.latitudeDelta));
+    regionRef.current = newRegion;
+    const nextZoomLevel = getZoomLevel(newRegion.latitudeDelta);
+    setZoomLevel((currentZoomLevel) =>
+      currentZoomLevel === nextZoomLevel ? currentZoomLevel : nextZoomLevel,
+    );
   }, []);
 
-  const handleHazardPress = (hazard: HazardItem) => {
+  const handleHazardPress = useCallback((hazard: HazardItem) => {
     setSelectedHazard(hazard);
     setShowDetail(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
+  }, []);
 
-  const handleHazardUpdated = (updatedHazard: HazardItem) => {
-    setSelectedHazard(updatedHazard);
-    queryClient.setQueryData<HazardItem[]>(
-      ["hazards", centerLat, centerLng, alertRadiusMeters],
-      (current = []) =>
-        current.map((hazard) =>
-          hazard.id === updatedHazard.id ? updatedHazard : hazard,
-        ),
-    );
-  };
+  const handleHazardUpdated = useCallback(
+    (updatedHazard: HazardItem) => {
+      setSelectedHazard(updatedHazard);
+      queryClient.setQueriesData<HazardItem[]>(
+        { queryKey: queryKeys.hazards.all },
+        (current) =>
+          current?.map((hazard) =>
+            hazard.id === updatedHazard.id ? updatedHazard : hazard,
+          ) ?? current,
+      );
+    },
+    [queryClient],
+  );
 
-  const handleClusterPress = (cluster: ClusterGroup) => {
+  const handleClusterPress = useCallback((cluster: ClusterGroup) => {
+    const currentRegion = regionRef.current;
     const newRegion: Region = {
       latitude: cluster.lat,
       longitude: cluster.lng,
-      latitudeDelta: region.latitudeDelta / 3,
-      longitudeDelta: region.longitudeDelta / 3,
+      latitudeDelta: currentRegion.latitudeDelta / 3,
+      longitudeDelta: currentRegion.longitudeDelta / 3,
     };
     mapRef.current?.animateToRegion(newRegion, 400);
-  };
+  }, []);
 
   const handleSearch = async (result: SearchResult) => {
     const { latitude, longitude, label } = result;
@@ -656,8 +640,6 @@ export default function MapScreen() {
 
     setSearchLocation("");
     setSearchedAreaName("");
-    setSearchedAreaSummary(null);
-    setSearchedAreaWeather(null);
     setQueryCenter(null);
     setSearchPin(null);
   };
@@ -704,45 +686,18 @@ export default function MapScreen() {
 
   return (
     <View style={styles.container}>
-      <MapViewWrapper
-        ref={mapRef}
-        style={styles.map}
-        initialRegion={region}
+      <HazardMap
+        hazards={hazards}
+        initialRegion={initialRegion}
+        mapPaddingBottom={insets.bottom + 310}
+        mapPaddingTop={insets.top + 72}
+        mapRef={mapRef}
+        onClusterPress={handleClusterPress}
+        onHazardPress={handleHazardPress}
         onRegionChangeComplete={handleRegionChange}
-        showsUserLocation
-        showsMyLocationButton={false}
-        showsCompass={false}
-        mapPadding={{
-          top: insets.top + 72,
-          bottom: insets.bottom + 310,
-          left: 0,
-          right: 0,
-        }}
-      >
-        {clusters.map((cluster, idx) =>
-          cluster.hazards.length === 1 ? (
-            <HazardMarker
-              key={cluster.hazards[0].id}
-              hazard={cluster.hazards[0]}
-              onPress={handleHazardPress}
-            />
-          ) : (
-            <ClusterMarker
-              key={`cluster-${idx}`}
-              count={cluster.hazards.length}
-              coordinate={{ latitude: cluster.lat, longitude: cluster.lng }}
-              onPress={() => handleClusterPress(cluster)}
-            />
-          ),
-        )}
-        {searchPin && (
-          <Marker
-            coordinate={{ latitude: searchPin.lat, longitude: searchPin.lng }}
-            title={searchPin.label}
-            pinColor="#1A9E8F"
-          />
-        )}
-      </MapViewWrapper>
+        searchPin={searchPin}
+        zoomLevel={zoomLevel}
+      />
 
       {/* Top Left - Menu Button  Collapse*/}
       <Pressable
@@ -845,7 +800,6 @@ export default function MapScreen() {
         onClose={() => setShowDetail(false)}
         userLat={userLocation?.lat ?? null}
         userLng={userLocation?.lng ?? null}
-        onConfirmed={() => refetchHazards()}
         onHazardUpdated={handleHazardUpdated}
       />
 

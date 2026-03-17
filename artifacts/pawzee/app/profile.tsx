@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
-import * as ImageManipulator from "expo-image-manipulator";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -24,6 +23,7 @@ import {
   uploadPhoto,
   type ProfileStats,
 } from "@/lib/api";
+import { prepareImage } from "@/lib/images";
 import { styles } from "./profileStyleSheet";
 
 const EMPTY_STATS: ProfileStats = {
@@ -93,23 +93,6 @@ function buildBadges(stats: ProfileStats) {
       earned: true,
     },
   ];
-}
-
-async function prepareProfileImage(asset: ImagePicker.ImagePickerAsset) {
-  const actions: Parameters<typeof ImageManipulator.manipulateAsync>[1] = [];
-
-  if (asset.width && asset.height) {
-    if (asset.width >= asset.height && asset.width > 1024) {
-      actions.push({ resize: { width: 1024 } });
-    } else if (asset.height > 1024) {
-      actions.push({ resize: { height: 1024 } });
-    }
-  }
-
-  return ImageManipulator.manipulateAsync(asset.uri, actions, {
-    compress: 0.7,
-    format: ImageManipulator.SaveFormat.JPEG,
-  });
 }
 
 export default function ProfileScreen() {
@@ -183,8 +166,8 @@ export default function ProfileScreen() {
       }
 
       setUploadingPhoto(true);
-      const preparedImage = await prepareProfileImage(result.assets[0]);
-      const photoUrl = await uploadPhoto(preparedImage.uri);
+      const preparedImageUri = await prepareImage(result.assets[0].uri);
+      const photoUrl = await uploadPhoto(preparedImageUri);
       await updateProfileImage(photoUrl);
       await refreshUser();
       await queryClient.invalidateQueries({ queryKey: ["profile"] });

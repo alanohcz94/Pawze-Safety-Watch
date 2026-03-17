@@ -7,6 +7,8 @@ import {
 export type { WeatherHourForecast } from "./weatherWindow";
 export { getMillisecondsUntilNextHour } from "./weatherWindow";
 
+export const WEATHER_CACHE_DURATION_MS = 60 * 60 * 1000;
+
 export interface AreaWeatherReport {
   currentTime: string;
   currentTempC: number;
@@ -121,6 +123,10 @@ export function formatForecastHour(time: string): string {
   return date
     .toLocaleTimeString("en-US", { hour: "numeric" })
     .replace(" ", "");
+}
+
+export function getWeatherCacheWindowKey(now = Date.now()): number {
+  return Math.floor(now / WEATHER_CACHE_DURATION_MS);
 }
 
 export async function fetchAreaWeather(

@@ -26,6 +26,7 @@ import {
 } from "@/lib/hazards";
 import { createHazard, uploadPhoto } from "@/lib/api";
 import { prepareImage } from "@/lib/images";
+import { invalidateHazardQueries } from "@/lib/queryKeys";
 
 export default function ReportScreen() {
   const insets = useSafeAreaInsets();
@@ -99,7 +100,7 @@ export default function ReportScreen() {
       });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      queryClient.invalidateQueries({ queryKey: ["hazards"] });
+      await invalidateHazardQueries(queryClient);
       router.back();
     } catch (err: any) {
       Alert.alert(

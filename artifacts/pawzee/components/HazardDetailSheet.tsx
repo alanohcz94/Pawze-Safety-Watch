@@ -12,6 +12,7 @@ import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
+import { useQueryClient } from "@tanstack/react-query";
 import Colors from "@/constants/colors";
 import { HazardIcon } from "./HazardIcon";
 import {
@@ -29,6 +30,7 @@ import {
   buildHazardNavigationUrl,
   getHazardDetailSheetState,
 } from "../lib/hazardDetailSheet";
+import { invalidateHazardQueries } from "@/lib/queryKeys";
 import { styles } from "./componentStyleSheet/StyleSheetHazardDetailSheet";
 
 type SheetView = "sheet" | "photo";
@@ -46,7 +48,6 @@ interface HazardDetailSheetProps {
   onClose: () => void;
   userLat: number | null;
   userLng: number | null;
-  onConfirmed: () => void;
   onHazardUpdated: (hazard: HazardItem) => void;
 }
 
@@ -56,10 +57,10 @@ export function HazardDetailSheet({
   onClose,
   userLat,
   userLng,
-  onConfirmed,
   onHazardUpdated,
 }: HazardDetailSheetProps) {
   const { isAuthenticated, login } = useAuth();
+  const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState(false);
   const [updatingPhoto, setUpdatingPhoto] = useState(false);
   const [currentView, setCurrentView] = useState<SheetView>("sheet");
@@ -113,9 +114,9 @@ export function HazardDetailSheet({
         userHasConfirmed: true,
       };
       onHazardUpdated(nextHazard);
+      await invalidateHazardQueries(queryClient);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert("Hazard Confirmed", "This hazard has been confirmed.");
-      onConfirmed();
     } catch (err: any) {
       Alert.alert("Cannot Confirm", err.message || "Failed to confirm hazard");
     } finally {
@@ -202,6 +203,7 @@ export function HazardDetailSheet({
         userHasConfirmed: true,
       };
       onHazardUpdated(nextHazard);
+      await invalidateHazardQueries(queryClient);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert(
         hadPhoto ? "Photo Updated" : "Photo Added",
@@ -209,7 +211,6 @@ export function HazardDetailSheet({
           ? "The hazard photo has been updated."
           : "A photo has been added to this hazard.",
       );
-      onConfirmed();
     } catch (err: any) {
       Alert.alert(
         "Photo Update Failed",
