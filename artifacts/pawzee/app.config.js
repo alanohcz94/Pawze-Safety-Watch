@@ -5,14 +5,27 @@ const googleMapsApiKey =
   process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ||
   "";
 
-const iosBundleIdentifier = process.env.IOS_BUNDLE_IDENTIFIER;
-const androidPackage = process.env.ANDROID_PACKAGE;
+const iosBundleIdentifier =
+  process.env.IOS_BUNDLE_IDENTIFIER || "com.pawzee.app";
+const androidPackage =
+  process.env.ANDROID_PACKAGE || "com.pawzee.app";
+
+const extraPlugins = googleMapsApiKey
+  ? [
+      [
+        "react-native-maps",
+        {
+          googleMapsApiKey,
+        },
+      ],
+    ]
+  : [];
 
 module.exports = () => ({
   ...baseConfig,
   ios: {
     ...baseConfig.ios,
-    ...(iosBundleIdentifier ? { bundleIdentifier: iosBundleIdentifier } : {}),
+    bundleIdentifier: iosBundleIdentifier,
     config: {
       ...(baseConfig.ios?.config ?? {}),
       ...(googleMapsApiKey ? { googleMapsApiKey } : {}),
@@ -20,7 +33,7 @@ module.exports = () => ({
   },
   android: {
     ...baseConfig.android,
-    ...(androidPackage ? { package: androidPackage } : {}),
+    package: androidPackage,
     config: {
       ...(baseConfig.android?.config ?? {}),
       ...(googleMapsApiKey
@@ -33,6 +46,10 @@ module.exports = () => ({
         : {}),
     },
   },
+  plugins: [
+    ...(baseConfig.plugins ?? []),
+    ...extraPlugins,
+  ],
   extra: {
     ...(baseConfig.extra ?? {}),
     iosGoogleMapsEnabled: Boolean(googleMapsApiKey),
