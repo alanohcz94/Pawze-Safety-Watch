@@ -10,17 +10,6 @@ const iosBundleIdentifier =
 const androidPackage =
   process.env.ANDROID_PACKAGE || "com.pawzee.app";
 
-const extraPlugins = googleMapsApiKey
-  ? [
-      [
-        "react-native-maps",
-        {
-          googleMapsApiKey,
-        },
-      ],
-    ]
-  : [];
-
 module.exports = () => ({
   ...baseConfig,
   ios: {
@@ -46,10 +35,6 @@ module.exports = () => ({
         : {}),
     },
   },
-  plugins: [
-    ...(baseConfig.plugins ?? []),
-    ...extraPlugins,
-  ],
   extra: {
     ...(baseConfig.extra ?? {}),
     iosGoogleMapsEnabled: Boolean(googleMapsApiKey),

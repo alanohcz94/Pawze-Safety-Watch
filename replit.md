@@ -124,7 +124,7 @@ Utility scripts package. Run via `pnpm --filter @workspace/scripts run <script>`
 - **Branding**: splash + app icon both use logo.png, black (#000000) loading screen with white logo
 - **Search pin**: teal (#1A9E8F) Marker shown on map when user searches a location; cleared on recenter
 - **Proximity notifications**: expo-notifications fires local alert when a hazard is within alertRadiusMeters; tracks notified hazard IDs in a ref to avoid duplicate alerts; only fires when "notifications" setting is enabled
-- **Google Maps API key**: GOOGLE_MAPS_API_KEY secret → injected into iOS (config.googleMapsApiKey) and Android (config.googleMaps.apiKey) via app.config.js + react-native-maps plugin
+- **Google Maps API key**: GOOGLE_MAPS_API_KEY secret → injected into iOS (ios.config.googleMapsApiKey) and Android (android.config.googleMaps.apiKey) via app.config.js; do NOT add react-native-maps to plugins (incompatible at 1.18.0)
 - **Bundle IDs**: iOS bundleIdentifier = `com.pawzee.app`, Android package = `com.pawzee.app` (override via IOS_BUNDLE_IDENTIFIER / ANDROID_PACKAGE env vars)
 - **Web map**: MapViewWrapper.web.tsx uses Leaflet + OpenStreetMap iframe (no API key needed); tracks user geolocation with teal dot
 - **EAS Build**: eas.json configured for development (internal), preview (APK/sim), and production (AAB/IPA) profiles
