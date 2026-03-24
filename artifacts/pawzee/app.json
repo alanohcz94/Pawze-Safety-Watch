@@ -47,6 +47,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "iosGoogleMapsEnabled": true,
+      "eas": {
+        "projectId": "5d64d9b0-6b1f-44fe-9df8-78c91389cc5e"
+      }
     }
   }
 }
