@@ -29,7 +29,6 @@
   },
   "submit": {
     "production": {
-      "ios": {},
       "android": {
         "track": "internal"
       }
