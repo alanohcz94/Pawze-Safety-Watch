@@ -2,14 +2,8 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
 function getApiBaseUrl(): string {
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  if (domain) {
-    return `https://${domain}`;
-  }
-  if (Platform.OS !== "web") {
-    throw new Error(
-      "EXPO_PUBLIC_DOMAIN is not configured. Set it in eas.json production env to your deployed Replit URL (e.g. workspace.alanoh1.repl.co) and rebuild the app.",
-    );
+  if (process.env.EXPO_PUBLIC_DOMAIN) {
+    return `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
   }
   return "";
 }

@@ -2,7 +2,6 @@
   "expo": {
     "name": "Pawzee",
     "slug": "pawzee",
-    "owner": "alanohcz",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
@@ -16,33 +15,25 @@
     },
     "ios": {
       "supportsTablet": false,
-      "buildNumber": "1",
       "infoPlist": {
-        "NSMotionUsageDescription": "Pawzee uses motion data to show your daily step count while you walk.",
-        "NSLocationWhenInUseUsageDescription": "Pawzee needs your location to show nearby hazards on the map.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Pawzee uses your location to alert you about nearby hazards while walking.",
-        "NSCameraUsageDescription": "Pawzee uses the camera to photograph hazards when reporting them.",
-        "NSPhotoLibraryUsageDescription": "Pawzee accesses your photo library to attach photos when reporting hazards.",
-        "ITSAppUsesNonExemptEncryption": false
+        "NSMotionUsageDescription": "Pawzee uses motion data to show your daily step count while you walk."
       }
     },
     "android": {
       "permissions": [
-        "ACTIVITY_RECOGNITION",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "CAMERA"
-      ],
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo.png",
-        "backgroundColor": "#000000"
-      }
+        "ACTIVITY_RECOGNITION"
+      ]
     },
     "web": {
       "favicon": "./assets/images/logo.png"
     },
     "plugins": [
-      "expo-router",
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
       "expo-font",
       "expo-web-browser",
       [
@@ -56,12 +47,6 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    },
-    "extra": {
-      "iosGoogleMapsEnabled": true,
-      "eas": {
-        "projectId": "5d64d9b0-6b1f-44fe-9df8-78c91389cc5e"
-      }
     }
   }
 }

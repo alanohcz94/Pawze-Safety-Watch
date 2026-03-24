@@ -64,6 +64,6 @@
     "expo-notifications": "~0.32.16",
     "expo-secure-store": "~15.0.8",
     "expo-sensors": "~15.0.8",
-    "react-native-maps": "1.27.2"
+    "react-native-maps": "1.18.0"
   }
 }
