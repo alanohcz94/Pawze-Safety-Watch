@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { Platform } from "react-native";
 import * as AuthSession from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
 import * as SecureStore from "expo-secure-store";
@@ -40,14 +41,24 @@ const AuthContext = createContext<AuthContextValue>({
 });
 
 function getApiBaseUrl(): string {
-  if (process.env.EXPO_PUBLIC_DOMAIN) {
-    return `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+  const domain = process.env.EXPO_PUBLIC_DOMAIN;
+  if (domain) {
+    return `https://${domain}`;
+  }
+  if (Platform.OS !== "web") {
+    throw new Error(
+      "EXPO_PUBLIC_DOMAIN is not configured. Set it in eas.json production env to your deployed Replit URL and rebuild the app.",
+    );
   }
   return "";
 }
 
 function getClientId(): string {
-  return process.env.EXPO_PUBLIC_REPL_ID || "";
+  const id = process.env.EXPO_PUBLIC_REPL_ID;
+  if (!id && Platform.OS !== "web") {
+    console.warn("EXPO_PUBLIC_REPL_ID is not set — Replit Auth will fail. Add it to eas.json production env.");
+  }
+  return id || "";
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

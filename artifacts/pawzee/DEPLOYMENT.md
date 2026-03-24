@@ -9,12 +9,13 @@ This guide walks you through publishing Pawzee to the iOS App Store and Google P
 1. [Prerequisites](#1-prerequisites)
 2. [One-Time Setup](#2-one-time-setup)
 3. [Restrict Your Google Maps API Key](#3-restrict-your-google-maps-api-key)
-4. [First iOS Build & TestFlight](#4-first-ios-build--testflight)
-5. [Submit iOS to the App Store](#5-submit-ios-to-the-app-store)
-6. [First Android Build & Play Store](#6-first-android-build--play-store)
-7. [Promote Android to Production](#7-promote-android-to-production)
-8. [Every Future Release](#8-every-future-release)
-9. [Troubleshooting](#9-troubleshooting)
+4. [Set Production Environment Variables](#4-set-production-environment-variables-required--do-before-every-build)
+5. [First iOS Build & TestFlight](#5-first-ios-build--testflight)
+6. [Submit iOS to the App Store](#6-submit-ios-to-the-app-store)
+7. [First Android Build & Play Store](#7-first-android-build--play-store)
+8. [Promote Android to Production](#8-promote-android-to-production)
+9. [Every Future Release](#9-every-future-release)
+10. [Troubleshooting](#10-troubleshooting)
 
 ---
 
@@ -131,7 +132,54 @@ Your `GOOGLE_MAPS_API_KEY` is already set up in Replit Secrets. Before going liv
 
 ---
 
-## 4. First iOS Build & TestFlight
+## 4. Set Production Environment Variables (REQUIRED — do before every build)
+
+This is the most critical step. The mobile app needs to know where your deployed API server lives. Without this, all API calls will fail with "Invalid URL" and Replit Auth will show "invalid_error".
+
+### Why this is needed
+
+The app is built by EAS servers in the cloud. Those servers do not have access to Replit's environment variables, so `EXPO_PUBLIC_DOMAIN` and `EXPO_PUBLIC_REPL_ID` must be explicitly set in `eas.json` before building.
+
+### Step 4a — Find your deployed Replit URL
+
+1. Open your Replit project.
+2. Click **Deploy** in the top-right corner.
+3. Copy the URL shown for your deployed app — it will look like one of these:
+   - `workspace.alanoh1.repl.co` (older format)
+   - `workspace-alanoh1.replit.app` (newer format)
+   - or a custom domain if you configured one
+
+### Step 4b — Update eas.json
+
+Open `artifacts/pawzee/eas.json` and replace the `EXPO_PUBLIC_DOMAIN` placeholder with your actual deployed URL:
+
+```json
+"production": {
+  "env": {
+    "EXPO_PUBLIC_REPL_ID": "5e723a64-9f24-4eb1-8254-87b49171d7cb",
+    "EXPO_PUBLIC_DOMAIN": "your-actual-deployed-url.repl.co"
+  }
+}
+```
+
+- **Do not** include `https://` — just the domain, e.g. `workspace.alanoh1.repl.co`
+- **EXPO_PUBLIC_REPL_ID** is already filled in and does not change
+
+### Step 4c — Verify the Replit API server is deployed
+
+Before building the mobile app, make sure your Replit project is deployed and the API is reachable. In your terminal, test:
+
+```bash
+curl https://YOUR_DEPLOYED_URL/api/health
+```
+
+You should get a `{"ok":true}` response. If not, deploy the Replit project first from the Replit dashboard.
+
+> **Every time you redeploy to a new Replit URL**, update `EXPO_PUBLIC_DOMAIN` in `eas.json` and rebuild the app.
+
+---
+
+## 5. First iOS Build & TestFlight
 
 TestFlight lets you install the app on real iPhones before it goes public. Always test on TestFlight first.
 
@@ -160,7 +208,7 @@ After submission (usually takes 5–10 minutes to process):
 
 ---
 
-## 5. Submit iOS to the App Store
+## 6. Submit iOS to the App Store
 
 Once you're happy with TestFlight testing:
 
@@ -178,7 +226,7 @@ Apple usually reviews apps within **1–3 business days**. You will receive an e
 
 ---
 
-## 6. First Android Build & Play Store
+## 7. First Android Build & Play Store
 
 ```bash
 cd artifacts/pawzee
@@ -213,7 +261,7 @@ After submission, the build appears in Play Console under **Internal testing**. 
 
 ---
 
-## 7. Promote Android to Production
+## 8. Promote Android to Production
 
 Once internal testing looks good:
 
@@ -224,7 +272,7 @@ Once internal testing looks good:
 
 ---
 
-## 8. Every Future Release
+## 9. Every Future Release
 
 For every update after the first, you only need these commands. The version and build number increment automatically thanks to `autoIncrement: true` in `eas.json`.
 
@@ -261,7 +309,29 @@ eas submit -p android --latest
 
 ---
 
-## 9. Troubleshooting
+## 10. Troubleshooting
+
+### "Invalid URL /api/hazards" or all features stop working after App Store install
+
+**Cause**: `EXPO_PUBLIC_DOMAIN` was not set in `eas.json` when the app was built. Without it, all API calls go to a relative path like `/api/hazards` which is not a valid URL on a native device.
+
+**Fix**: Follow [Section 4](#4-set-production-environment-variables-required--do-before-every-build), set `EXPO_PUBLIC_DOMAIN` to your deployed Replit URL, and rebuild:
+```bash
+cd artifacts/pawzee
+eas build -p all --profile production
+eas submit -p ios --latest   # iOS
+eas submit -p android --latest  # Android
+```
+
+---
+
+### Replit Auth shows "invalid_error" on sign-in
+
+**Cause**: `EXPO_PUBLIC_REPL_ID` was not baked into the production build, so the OAuth client_id sent to Replit's OIDC server is blank.
+
+**Fix**: This value is already set to `5e723a64-9f24-4eb1-8254-87b49171d7cb` in `eas.json`. If you see this error, verify `eas.json` has both env vars set, then rebuild. Also make sure your Replit project is deployed and the API is reachable (see Section 4c).
+
+---
 
 ### "No logs" or build fails immediately without any output
 
