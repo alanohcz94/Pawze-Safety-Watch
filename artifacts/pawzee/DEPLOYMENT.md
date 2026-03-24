@@ -68,8 +68,8 @@ eas init
 ```
 
 - When asked to create a new project, choose **Yes**.
-- EAS will write a `projectId` into `app.json` automatically.
-- This links your local code to the EAS dashboard at [expo.dev](https://expo.dev).
+- EAS will link the project and record its `projectId` in your Expo config (you will see it appear in `app.json`).
+- This connects your local code to the EAS dashboard at [expo.dev](https://expo.dev).
 
 ### Step 2c — Set up iOS credentials (Apple)
 
@@ -169,7 +169,7 @@ Once you're happy with TestFlight testing:
 3. Fill in required fields:
    - **Description** (what Pawzee does)
    - **Keywords** (dog walk, hazard, safety, map)
-   - **Support URL** (supportPawject@gmail.com works as a URL like `mailto:supportPawject@gmail.com`)
+   - **Support URL** — Apple requires a valid `https://` URL here (not a mailto link). Create a simple web page or use a Google Form, then put that URL. For example: `https://sites.google.com/view/pawzee-support` or any publicly accessible page with a contact form or email address displayed.
    - **Screenshots** — at least one set for iPhone 6.5" display (use the iOS Simulator or a real device)
 4. Under **Build**, click the **+** button and select your TestFlight build.
 5. Click **Save**, then **Submit for Review**.
@@ -195,8 +195,19 @@ EAS will ask for a **Google Play service account key** (a JSON file) the first t
 1. Go to [Google Play Console](https://play.google.com/console) → **Setup → API access**.
 2. Link to a Google Cloud project.
 3. Create a service account and grant it **Release manager** permissions.
-4. Download the JSON key file.
-5. Provide the path to this file when EAS asks (or set it as `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` in your environment).
+4. Download the JSON key file and save it somewhere safe on your computer.
+5. Provide the path to this file when EAS asks during submission. Alternatively, add it permanently to `eas.json` so you never have to type it again:
+
+```json
+"submit": {
+  "production": {
+    "android": {
+      "track": "internal",
+      "serviceAccountKeyPath": "/path/to/your/service-account-key.json"
+    }
+  }
+}
+```
 
 After submission, the build appears in Play Console under **Internal testing**. Add your Gmail address as an internal tester and install via the Play Store.
 
