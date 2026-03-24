@@ -7,7 +7,7 @@
     "icon": "./assets/images/logo.png",
     "scheme": "pawzee",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/images/logo.png",
       "resizeMode": "contain",
@@ -15,25 +15,33 @@
     },
     "ios": {
       "supportsTablet": false,
+      "buildNumber": "1",
       "infoPlist": {
-        "NSMotionUsageDescription": "Pawzee uses motion data to show your daily step count while you walk."
+        "NSMotionUsageDescription": "Pawzee uses motion data to show your daily step count while you walk.",
+        "NSLocationWhenInUseUsageDescription": "Pawzee needs your location to show nearby hazards on the map.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Pawzee uses your location to alert you about nearby hazards while walking.",
+        "NSCameraUsageDescription": "Pawzee uses the camera to photograph hazards when reporting them.",
+        "NSPhotoLibraryUsageDescription": "Pawzee accesses your photo library to attach photos when reporting hazards.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "permissions": [
-        "ACTIVITY_RECOGNITION"
-      ]
+        "ACTIVITY_RECOGNITION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/logo.png",
+        "backgroundColor": "#000000"
+      }
     },
     "web": {
       "favicon": "./assets/images/logo.png"
     },
     "plugins": [
-      [
-        "expo-router",
-        {
-          "origin": "https://replit.com/"
-        }
-      ],
+      "expo-router",
       "expo-font",
       "expo-web-browser",
       [

@@ -1,15 +1,12 @@
 {
   "cli": {
-    "version": ">= 12.0.0",
+    "version": ">= 16.0.1",
     "appVersionSource": "remote"
   },
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
-      "env": {
-        "EXPO_PUBLIC_DOMAIN": "your-domain.replit.dev"
-      }
+      "distribution": "internal"
     },
     "preview": {
       "distribution": "internal",
@@ -21,6 +18,7 @@
       }
     },
     "production": {
+      "autoIncrement": true,
       "ios": {
         "resourceClass": "m-medium"
       },
@@ -31,9 +29,7 @@
   },
   "submit": {
     "production": {
-      "ios": {
-        "ascAppId": ""
-      },
+      "ios": {},
       "android": {
         "track": "internal"
       }
