@@ -2,12 +2,13 @@
   "expo": {
     "name": "Pawzee",
     "slug": "pawzee",
+    "owner": "alanohcz",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "pawzee",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/logo.png",
       "resizeMode": "contain",
@@ -55,6 +56,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "iosGoogleMapsEnabled": true,
+      "eas": {
+        "projectId": "5d64d9b0-6b1f-44fe-9df8-78c91389cc5e"
+      }
     }
   }
 }

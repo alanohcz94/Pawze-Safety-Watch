@@ -278,9 +278,9 @@ eas init
 
 ### Google Maps shows a blank/grey screen on a real iPhone
 
-**Cause**: `react-native-maps` version 1.18.0 with `PROVIDER_GOOGLE` is incompatible with React Native's New Architecture (Fabric renderer).
+**Cause**: Older versions of `react-native-maps` (below 1.20.0) had incomplete New Architecture support, causing `PROVIDER_GOOGLE` to render a blank map.
 
-**Fix** (already applied): `newArchEnabled` is set to `false` in `app.json`. If you ever see this again after upgrading packages, check that `newArchEnabled` is still `false`.
+**Fix** (already applied): `react-native-maps` is pinned to `1.27.2`, which has full New Architecture support. `newArchEnabled` is `true` in `app.json`. If you upgrade `react-native-maps` in the future and see a blank map again, check the library's changelog for New Architecture compatibility notes.
 
 ---
 
