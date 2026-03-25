@@ -8,7 +8,7 @@ function getApiBaseUrl(): string {
   }
   if (Platform.OS !== "web") {
     throw new Error(
-      "EXPO_PUBLIC_DOMAIN is not configured. Set it in eas.json production env to your deployed Replit URL (e.g. workspace.alanoh1.repl.co) and rebuild the app.",
+      "EXPO_PUBLIC_DOMAIN is not configured. Set it in eas.json production env to your deployed Replit URL (e.g. myproject.replit.app) and rebuild the app.",
     );
   }
   return "";

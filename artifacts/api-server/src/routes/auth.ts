@@ -18,6 +18,7 @@ import { eq } from "drizzle-orm";
 import {
   clearSession,
   getOidcConfig,
+  invalidateOidcConfig,
   getSessionId,
   createSession,
   deleteSession,
@@ -263,7 +264,7 @@ router.post(
       return;
     }
 
-    try {
+    const attemptTokenExchange = async (retrying = false): Promise<void> => {
       const config = await getOidcConfig();
 
       const callbackUrl = new URL(redirect_uri);
@@ -304,9 +305,35 @@ router.post(
       const sid = await createSession(sessionData);
       const response: MobileTokenExchangeSuccess = { token: sid };
       res.json(response);
+    };
+
+    try {
+      await attemptTokenExchange();
     } catch (err) {
-      console.error("Mobile token exchange error:", err);
-      res.status(500).json({ error: "Token exchange failed" });
+      const msg = err instanceof Error ? err.message : String(err);
+      const isKeyError =
+        msg.includes("no matching key") ||
+        msg.includes("signature verification") ||
+        msg.includes("JWKSNoMatchingKey") ||
+        msg.includes("JWTClaimValidationFailed");
+
+      if (isKeyError && !res.headersSent) {
+        console.warn("OIDC key validation failed — re-fetching discovery and retrying once");
+        invalidateOidcConfig();
+        try {
+          await attemptTokenExchange(true);
+          return;
+        } catch (retryErr) {
+          console.error("Mobile token exchange retry failed:", retryErr);
+          res.status(401).json({ error: "Authentication failed. Please sign in again." });
+          return;
+        }
+      }
+
+      if (!res.headersSent) {
+        console.error("Mobile token exchange error:", err);
+        res.status(500).json({ error: "Token exchange failed" });
+      }
     }
   },
 );

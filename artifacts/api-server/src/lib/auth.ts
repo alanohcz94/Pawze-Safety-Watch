@@ -9,6 +9,8 @@ export const ISSUER_URL = process.env.ISSUER_URL ?? "https://replit.com/oidc";
 export const SESSION_COOKIE = "sid";
 export const SESSION_TTL = 7 * 24 * 60 * 60 * 1000;
 
+const OIDC_CACHE_TTL = 12 * 60 * 60 * 1000;
+
 export interface SessionData {
   user: AuthUser;
   access_token: string;
@@ -17,15 +19,23 @@ export interface SessionData {
 }
 
 let oidcConfig: client.Configuration | null = null;
+let oidcConfigFetchedAt: number = 0;
 
 export async function getOidcConfig(): Promise<client.Configuration> {
-  if (!oidcConfig) {
+  const now = Date.now();
+  if (!oidcConfig || now - oidcConfigFetchedAt > OIDC_CACHE_TTL) {
     oidcConfig = await client.discovery(
       new URL(ISSUER_URL),
       process.env.REPL_ID!,
     );
+    oidcConfigFetchedAt = now;
   }
   return oidcConfig;
+}
+
+export function invalidateOidcConfig(): void {
+  oidcConfig = null;
+  oidcConfigFetchedAt = 0;
 }
 
 export async function createSession(data: SessionData): Promise<string> {

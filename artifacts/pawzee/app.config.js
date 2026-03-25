@@ -10,21 +10,9 @@ const iosBundleIdentifier =
 const androidPackage =
   process.env.ANDROID_PACKAGE || "com.pawzee.app";
 
-const isReplit = Boolean(process.env.REPL_ID);
-
-const plugins = (baseConfig.plugins ?? []).map((plugin) => {
-  const pluginName = Array.isArray(plugin) ? plugin[0] : plugin;
-  if (pluginName === "expo-router") {
-    return isReplit
-      ? ["expo-router", { origin: "https://replit.com/" }]
-      : "expo-router";
-  }
-  return plugin;
-});
-
 module.exports = () => ({
   ...baseConfig,
-  plugins,
+  plugins: baseConfig.plugins ?? [],
   ios: {
     ...baseConfig.ios,
     bundleIdentifier: iosBundleIdentifier,
