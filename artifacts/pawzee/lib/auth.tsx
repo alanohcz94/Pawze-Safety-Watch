@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from "react";
 import { Platform } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import * as SecureStore from "expo-secure-store";
@@ -43,14 +50,8 @@ const AuthContext = createContext<AuthContextValue>({
 });
 
 function getApiBaseUrl(): string {
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  if (domain) {
-    return `https://${domain}`;
-  }
-  if (Platform.OS !== "web") {
-    throw new Error(
-      "EXPO_PUBLIC_DOMAIN is not configured. Set it in eas.json to your deployed Replit URL (pawzee.replit.app) and rebuild the app.",
-    );
+  if (process.env.EXPO_PUBLIC_DOMAIN) {
+    return `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
   }
   return "";
 }
@@ -97,7 +98,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await SecureStore.setItemAsync(IS_GUEST_KEY, "true");
       return data.token;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to start a session.";
+      const msg =
+        err instanceof Error ? err.message : "Failed to start a session.";
       setAuthError(msg);
       return null;
     }
@@ -120,7 +122,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           return res.json();
         } catch (err) {
-          const msg = err instanceof Error ? err.message : "Failed to load account.";
+          const msg =
+            err instanceof Error ? err.message : "Failed to load account.";
           setAuthError(msg);
           return { user: null };
         }
@@ -165,7 +168,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsGuest(false);
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Something went wrong loading your account.";
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Something went wrong loading your account.";
       setAuthError(msg);
       setUser(null);
       setIsGuest(false);
@@ -194,7 +200,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ? `${apiBase}/api/mobile-auth/start?guest_token=${encodeURIComponent(currentToken)}`
         : `${apiBase}/api/mobile-auth/start`;
 
-      const result = await WebBrowser.openAuthSessionAsync(startUrl, "pawzee://");
+      const result = await WebBrowser.openAuthSessionAsync(
+        startUrl,
+        "pawzee://",
+      );
 
       if (result.type !== "success") {
         return;
@@ -214,7 +223,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsGuest(false);
       await fetchUser();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Sign-in failed. Please try again.";
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Sign-in failed. Please try again.";
       setAuthError(msg);
     }
   }, [clearAuthError, fetchUser]);
@@ -227,7 +239,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await SecureStore.deleteItemAsync(IS_GUEST_KEY);
       const token = await createGuestSession();
       if (!token) {
-        setAuthError("Unable to create a guest session. Please check your connection and try again.");
+        setAuthError(
+          "Unable to create a guest session. Please check your connection and try again.",
+        );
         setUser(null);
         setIsGuest(false);
         setIsLoading(false);
@@ -235,7 +249,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       await fetchUser();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to continue as guest.";
+      const msg =
+        err instanceof Error ? err.message : "Failed to continue as guest.";
       setAuthError(msg);
       setIsLoading(false);
     }
@@ -246,10 +261,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
       if (token) {
         const apiBase = getApiBaseUrl();
-        await authFetch(
-          `${apiBase}/api/mobile-auth/logout`,
-          { method: "POST", headers: { Authorization: `Bearer ${token}` } },
-        ).catch(() => {});
+        await authFetch(`${apiBase}/api/mobile-auth/logout`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => {});
       }
     } catch {
     } finally {
