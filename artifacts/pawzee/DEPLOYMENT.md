@@ -151,21 +151,44 @@ The app is built by EAS servers in the cloud. Those servers do not have access t
 
 ### Step 4b — Update eas.json
 
-Open `artifacts/pawzee/eas.json` and replace the `EXPO_PUBLIC_DOMAIN` placeholder with your actual deployed URL:
+Open `artifacts/pawzee/eas.json`. Both values are already filled in with the correct production values:
 
 ```json
 "production": {
   "env": {
     "EXPO_PUBLIC_REPL_ID": "5e723a64-9f24-4eb1-8254-87b49171d7cb",
-    "EXPO_PUBLIC_DOMAIN": "your-actual-deployed-url.repl.co"
+    "EXPO_PUBLIC_DOMAIN": "workspace-alanoh1.replit.app"
   }
 }
 ```
 
-- **Do not** include `https://` — just the domain, e.g. `workspace.alanoh1.repl.co`
-- **EXPO_PUBLIC_REPL_ID** is already filled in and does not change
+These are confirmed values for this project:
+- **EXPO_PUBLIC_DOMAIN** = `workspace-alanoh1.replit.app` (your deployed Replit URL)
+- **EXPO_PUBLIC_REPL_ID** = your Replit project ID (used for authentication)
 
-### Step 4c — Verify the Replit API server is deployed
+> If you ever redeploy to a different URL, update `EXPO_PUBLIC_DOMAIN` here and rebuild.
+
+### Step 4c — Add your Google Maps API key as an EAS secret
+
+Without this, iOS builds will fall back to Apple Maps and Android maps may not work.
+
+EAS Secrets are stored securely on Expo's servers and injected automatically during every build. Run this command once from the `artifacts/pawzee` directory:
+
+```bash
+cd artifacts/pawzee
+eas secret:create --scope project --name GOOGLE_MAPS_API_KEY --value YOUR_GOOGLE_MAPS_API_KEY
+```
+
+Replace `YOUR_GOOGLE_MAPS_API_KEY` with your actual key from Google Cloud Console (the same key stored in your Replit Secrets).
+
+To confirm the secret was saved:
+```bash
+eas secret:list
+```
+
+You should see `GOOGLE_MAPS_API_KEY` listed. From now on, every `eas build` will automatically use this key.
+
+### Step 4d — Verify the Replit API server is deployed
 
 Before building the mobile app, make sure your Replit project is deployed and the API is reachable. In your terminal, test:
 
@@ -310,6 +333,34 @@ eas submit -p android --latest
 ---
 
 ## 10. Troubleshooting
+
+### "RNMapsAirModule could not be found" error in Expo Go
+
+**Cause**: This is NOT a bug. `react-native-maps` uses native iOS/Android modules that are not included in the standard Expo Go app. Expo Go is a limited sandbox environment.
+
+**This error will only appear in Expo Go, never in TestFlight or the App Store build.**
+
+**Fix**: You cannot test maps in Expo Go. To test the map on a real device, install the TestFlight build instead. For development testing, you can build a development client:
+```bash
+eas build -p ios --profile development
+```
+Then scan the QR code to install the development client and connect to your local dev server.
+
+---
+
+### Map shows Apple Maps instead of Google Maps on TestFlight / App Store
+
+**Cause**: `GOOGLE_MAPS_API_KEY` was not set in the EAS build environment. Without this key, the Google Maps SDK doesn't initialize and iOS defaults to Apple Maps.
+
+**Fix**: Add the key as an EAS secret (Step 4c above) and rebuild:
+```bash
+cd artifacts/pawzee
+eas secret:create --scope project --name GOOGLE_MAPS_API_KEY --value YOUR_KEY
+eas build -p all --profile production
+eas submit -p ios --latest
+```
+
+---
 
 ### "Invalid URL /api/hazards" or all features stop working after App Store install
 

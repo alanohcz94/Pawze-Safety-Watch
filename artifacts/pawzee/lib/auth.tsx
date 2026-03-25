@@ -68,7 +68,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const discovery = AuthSession.useAutoDiscovery(ISSUER_URL);
 
-  const redirectUri = AuthSession.makeRedirectUri();
+  const redirectUri = Platform.OS === "web"
+    ? AuthSession.makeRedirectUri()
+    : AuthSession.makeRedirectUri({ scheme: "pawzee" });
 
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
