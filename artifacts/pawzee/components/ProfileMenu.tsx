@@ -29,7 +29,7 @@ interface ProfileMenuProps {
 
 export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
   const insets = useSafeAreaInsets();
-  const { user, isAuthenticated, isGuest, login, loginAsGuest, logout } =
+  const { user, isAuthenticated, isGuest, login, loginAsGuest, logout, authError, clearAuthError } =
     useAuth();
   const settings = useSettings();
 
@@ -473,6 +473,27 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
                 </>
               ) : (
                 <View style={styles.authActions}>
+                  {authError ? (
+                    <Pressable
+                      onPress={clearAuthError}
+                      style={{
+                        backgroundColor: "#FFF0EE",
+                        borderRadius: 8,
+                        padding: 10,
+                        marginBottom: 10,
+                        borderWidth: 1,
+                        borderColor: "#FF6B5B",
+                      }}
+                    >
+                      <Text style={{ color: "#CC3322", fontSize: 13, textAlign: "center" }}>
+                        {authError}
+                      </Text>
+                      <Text style={{ color: "#CC3322", fontSize: 11, textAlign: "center", marginTop: 2 }}>
+                        Tap to dismiss
+                      </Text>
+                    </Pressable>
+                  ) : null}
+
                   <Pressable style={styles.loginBtn} onPress={handleLogin}>
                     <Feather name="log-in" size={20} color="#FFF" />
                     <Text style={styles.loginBtnText}>Log In with Replit</Text>

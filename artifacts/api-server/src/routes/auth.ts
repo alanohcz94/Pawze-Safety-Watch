@@ -20,6 +20,7 @@ import {
   getOidcConfig,
   invalidateOidcConfig,
   getSessionId,
+  getSession,
   createSession,
   deleteSession,
   SESSION_COOKIE,
@@ -29,6 +30,22 @@ import {
 } from "../lib/auth";
 
 const OIDC_COOKIE_TTL = 10 * 60 * 1000;
+
+const MOBILE_STATE_TTL = 10 * 60 * 1000;
+
+interface MobileAuthState {
+  codeVerifier: string;
+  nonce: string;
+  guestToken: string | null;
+  expiresAt: number;
+}
+const mobileAuthStates = new Map<string, MobileAuthState>();
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of mobileAuthStates) {
+    if (val.expiresAt < now) mobileAuthStates.delete(key);
+  }
+}, 60_000).unref();
 
 const router: IRouter = Router();
 
@@ -252,6 +269,105 @@ router.get("/logout", async (req: Request, res: Response) => {
   });
 
   res.redirect(endSessionUrl.href);
+});
+
+router.get("/mobile-auth/start", async (req: Request, res: Response) => {
+  try {
+    const config = await getOidcConfig();
+    const callbackUrl = `${getOrigin(req)}/api/mobile-auth/callback`;
+
+    const state = oidc.randomState();
+    const nonce = oidc.randomNonce();
+    const codeVerifier = oidc.randomPKCECodeVerifier();
+    const codeChallenge = await oidc.calculatePKCECodeChallenge(codeVerifier);
+
+    const guestToken = typeof req.query.guest_token === "string" && req.query.guest_token
+      ? req.query.guest_token
+      : null;
+
+    mobileAuthStates.set(state, {
+      codeVerifier,
+      nonce,
+      guestToken,
+      expiresAt: Date.now() + MOBILE_STATE_TTL,
+    });
+
+    const redirectTo = oidc.buildAuthorizationUrl(config, {
+      redirect_uri: callbackUrl,
+      scope: "openid email profile offline_access",
+      code_challenge: codeChallenge,
+      code_challenge_method: "S256",
+      prompt: "login consent",
+      state,
+      nonce,
+    });
+
+    res.redirect(redirectTo.href);
+  } catch (err) {
+    console.error("mobile-auth/start error:", err);
+    res.redirect("pawzee://auth-callback?error=server_error");
+  }
+});
+
+router.get("/mobile-auth/callback", async (req: Request, res: Response) => {
+  try {
+    const config = await getOidcConfig();
+    const callbackUrl = `${getOrigin(req)}/api/mobile-auth/callback`;
+
+    const queryState = typeof req.query.state === "string" ? req.query.state : null;
+    if (!queryState) {
+      res.redirect("pawzee://auth-callback?error=missing_state");
+      return;
+    }
+
+    const authState = mobileAuthStates.get(queryState);
+    if (!authState || authState.expiresAt < Date.now()) {
+      mobileAuthStates.delete(queryState);
+      res.redirect("pawzee://auth-callback?error=expired_state");
+      return;
+    }
+    mobileAuthStates.delete(queryState);
+
+    const currentUrl = new URL(
+      `${callbackUrl}?${new URL(req.url, `http://${req.headers.host}`).searchParams}`,
+    );
+
+    const tokens = await oidc.authorizationCodeGrant(config, currentUrl, {
+      pkceCodeVerifier: authState.codeVerifier,
+      expectedNonce: authState.nonce,
+      expectedState: queryState,
+      idTokenExpected: true,
+    });
+
+    const claims = tokens.claims();
+    if (!claims) {
+      res.redirect("pawzee://auth-callback?error=no_claims");
+      return;
+    }
+
+    const dbUser = await upsertUser(claims as unknown as Record<string, unknown>);
+
+    if (authState.guestToken) {
+      const guestSession = await getSession(authState.guestToken);
+      if (guestSession?.user?.id) {
+        await transferGuestData(guestSession.user.id, dbUser.id);
+      }
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    const sessionData: SessionData = {
+      user: toAuthUser(dbUser),
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      expires_at: tokens.expiresIn() ? now + tokens.expiresIn()! : claims.exp,
+    };
+
+    const sid = await createSession(sessionData);
+    res.redirect(`pawzee://auth-callback?token=${encodeURIComponent(sid)}`);
+  } catch (err) {
+    console.error("mobile-auth/callback error:", err);
+    res.redirect("pawzee://auth-callback?error=auth_failed");
+  }
 });
 
 router.post(

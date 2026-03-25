@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import { Platform } from "react-native";
-import * as AuthSession from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
 import * as SecureStore from "expo-secure-store";
 
@@ -8,7 +7,6 @@ WebBrowser.maybeCompleteAuthSession();
 
 const AUTH_TOKEN_KEY = "auth_session_token";
 const IS_GUEST_KEY = "auth_is_guest";
-const ISSUER_URL = process.env.EXPO_PUBLIC_ISSUER_URL ?? "https://replit.com/oidc";
 
 interface User {
   id: string;
@@ -51,18 +49,10 @@ function getApiBaseUrl(): string {
   }
   if (Platform.OS !== "web") {
     throw new Error(
-      "EXPO_PUBLIC_DOMAIN is not configured. Set it in eas.json production env to your deployed Replit URL and rebuild the app.",
+      "EXPO_PUBLIC_DOMAIN is not configured. Set it in eas.json to your deployed Replit URL (pawzee.replit.app) and rebuild the app.",
     );
   }
   return "";
-}
-
-function getClientId(): string {
-  const id = process.env.EXPO_PUBLIC_REPL_ID;
-  if (!id && Platform.OS !== "web") {
-    console.warn("EXPO_PUBLIC_REPL_ID is not set — Replit Auth will fail. Add it to eas.json production env.");
-  }
-  return id || "";
 }
 
 async function authFetch(
@@ -84,22 +74,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authError, setAuthError] = useState<string | null>(null);
 
   const clearAuthError = useCallback(() => setAuthError(null), []);
-
-  const discovery = AuthSession.useAutoDiscovery(ISSUER_URL);
-
-  const redirectUri = Platform.OS === "web"
-    ? AuthSession.makeRedirectUri()
-    : AuthSession.makeRedirectUri({ scheme: "pawzee" });
-
-  const [request, response, promptAsync] = AuthSession.useAuthRequest(
-    {
-      clientId: getClientId(),
-      scopes: ["openid", "email", "profile", "offline_access"],
-      redirectUri,
-      prompt: AuthSession.Prompt.Login,
-    },
-    discovery,
-  );
 
   const createGuestSession = useCallback(async (): Promise<string | null> => {
     try {
@@ -204,67 +178,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchUser();
   }, [fetchUser]);
 
-  useEffect(() => {
-    if (response?.type !== "success" || !request?.codeVerifier) return;
-
-    const { code, state } = response.params;
-
-    (async () => {
-      try {
-        const apiBase = getApiBaseUrl();
-
-        const currentToken = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
-
-        const exchangeRes = await authFetch(
-          `${apiBase}/api/mobile-auth/token-exchange`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(currentToken ? { Authorization: `Bearer ${currentToken}` } : {}),
-            },
-            body: JSON.stringify({
-              code,
-              code_verifier: request.codeVerifier,
-              redirect_uri: redirectUri,
-              state,
-            }),
-          },
-          "Sign-in failed. Please check your connection and try again.",
-        );
-
-        if (!exchangeRes.ok) {
-          const errData = await exchangeRes.json().catch(() => ({}));
-          setAuthError(errData.error || "Sign-in failed. Please try again.");
-          setIsLoading(false);
-          return;
-        }
-
-        const data = await exchangeRes.json();
-        if (data.token) {
-          await SecureStore.setItemAsync(AUTH_TOKEN_KEY, data.token);
-          await SecureStore.deleteItemAsync(IS_GUEST_KEY);
-          setIsGuest(false);
-          setIsLoading(true);
-          await fetchUser();
-        }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Sign-in failed. Please try again.";
-        setAuthError(msg);
-        setIsLoading(false);
-      }
-    })();
-  }, [response, request, redirectUri, fetchUser]);
-
   const login = useCallback(async () => {
     try {
       clearAuthError();
-      await promptAsync();
+      const apiBase = getApiBaseUrl();
+      const currentToken = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+
+      const startUrl = currentToken
+        ? `${apiBase}/api/mobile-auth/start?guest_token=${encodeURIComponent(currentToken)}`
+        : `${apiBase}/api/mobile-auth/start`;
+
+      const result = await WebBrowser.openAuthSessionAsync(startUrl, "pawzee://");
+
+      if (result.type !== "success") {
+        return;
+      }
+
+      const returnedUrl = new URL(result.url);
+      const token = returnedUrl.searchParams.get("token");
+      const error = returnedUrl.searchParams.get("error");
+
+      if (error || !token) {
+        setAuthError("Sign-in failed. Please try again.");
+        return;
+      }
+
+      await SecureStore.setItemAsync(AUTH_TOKEN_KEY, token);
+      await SecureStore.deleteItemAsync(IS_GUEST_KEY);
+      setIsGuest(false);
+      await fetchUser();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to open sign-in. Please try again.";
+      const msg = err instanceof Error ? err.message : "Sign-in failed. Please try again.";
       setAuthError(msg);
     }
-  }, [promptAsync, clearAuthError]);
+  }, [clearAuthError, fetchUser]);
 
   const loginAsGuest = useCallback(async () => {
     try {
@@ -274,6 +221,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await SecureStore.deleteItemAsync(IS_GUEST_KEY);
       const token = await createGuestSession();
       if (!token) {
+        setAuthError("Unable to create a guest session. Please check your connection and try again.");
         setUser(null);
         setIsGuest(false);
         setIsLoading(false);
