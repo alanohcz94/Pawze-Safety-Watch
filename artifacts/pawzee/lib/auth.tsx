@@ -182,6 +182,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       clearAuthError();
       const apiBase = getApiBaseUrl();
+
+      if (Platform.OS === "web") {
+        window.location.href = `${apiBase}/api/login`;
+        return;
+      }
+
       const currentToken = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
 
       const startUrl = currentToken
