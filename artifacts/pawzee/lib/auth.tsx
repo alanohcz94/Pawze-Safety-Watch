@@ -23,10 +23,12 @@ interface AuthContextValue {
   isLoading: boolean;
   isAuthenticated: boolean;
   isGuest: boolean;
+  authError: string | null;
   login: () => Promise<void>;
   loginAsGuest: () => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  clearAuthError: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue>({
@@ -34,10 +36,12 @@ const AuthContext = createContext<AuthContextValue>({
   isLoading: true,
   isAuthenticated: false,
   isGuest: false,
+  authError: null,
   login: async () => {},
   loginAsGuest: async () => {},
   logout: async () => {},
   refreshUser: async () => {},
+  clearAuthError: () => {},
 });
 
 function getApiBaseUrl(): string {
@@ -61,10 +65,25 @@ function getClientId(): string {
   return id || "";
 }
 
+async function authFetch(
+  input: string,
+  init?: RequestInit,
+  userMessage = "Network error. Please check your connection.",
+): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch {
+    throw new Error(userMessage);
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGuest, setIsGuest] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  const clearAuthError = useCallback(() => setAuthError(null), []);
 
   const discovery = AuthSession.useAutoDiscovery(ISSUER_URL);
 
@@ -85,13 +104,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const createGuestSession = useCallback(async (): Promise<string | null> => {
     try {
       const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/api/guest/session`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
+      const res = await authFetch(
+        `${apiBase}/api/guest/session`,
+        { method: "POST", headers: { "Content-Type": "application/json" } },
+        "Unable to start a session. Please check your connection.",
+      );
 
       if (!res.ok) {
-        console.error("Guest session failed:", res.status);
         return null;
       }
 
@@ -104,7 +123,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await SecureStore.setItemAsync(IS_GUEST_KEY, "true");
       return data.token;
     } catch (err) {
-      console.error("Guest session error:", err);
+      const msg = err instanceof Error ? err.message : "Failed to start a session.";
+      setAuthError(msg);
       return null;
     }
   }, []);
@@ -113,14 +133,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       const apiBase = getApiBaseUrl();
+
       const loadUser = async (token: string) => {
-        const res = await fetch(`${apiBase}/api/auth/user`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) {
+        try {
+          const res = await authFetch(
+            `${apiBase}/api/auth/user`,
+            { headers: { Authorization: `Bearer ${token}` } },
+            "Unable to load your account. Please check your connection.",
+          );
+          if (!res.ok) {
+            return { user: null };
+          }
+          return res.json();
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : "Failed to load account.";
+          setAuthError(msg);
           return { user: null };
         }
-        return res.json();
       };
 
       let token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
@@ -162,7 +191,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsGuest(false);
       }
     } catch (err) {
-      console.error("Fetch user error:", err);
+      const msg = err instanceof Error ? err.message : "Something went wrong loading your account.";
+      setAuthError(msg);
       setUser(null);
       setIsGuest(false);
     } finally {
@@ -182,31 +212,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (async () => {
       try {
         const apiBase = getApiBaseUrl();
-        if (!apiBase) {
-          console.error("API base URL is not configured.");
-          return;
-        }
 
         const currentToken = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
 
-        const exchangeRes = await fetch(`${apiBase}/api/mobile-auth/token-exchange`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(currentToken
-              ? { Authorization: `Bearer ${currentToken}` }
-              : {}),
+        const exchangeRes = await authFetch(
+          `${apiBase}/api/mobile-auth/token-exchange`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(currentToken ? { Authorization: `Bearer ${currentToken}` } : {}),
+            },
+            body: JSON.stringify({
+              code,
+              code_verifier: request.codeVerifier,
+              redirect_uri: redirectUri,
+              state,
+            }),
           },
-          body: JSON.stringify({
-            code,
-            code_verifier: request.codeVerifier,
-            redirect_uri: redirectUri,
-            state,
-          }),
-        });
+          "Sign-in failed. Please check your connection and try again.",
+        );
 
         if (!exchangeRes.ok) {
-          console.error("Token exchange failed:", exchangeRes.status);
+          const errData = await exchangeRes.json().catch(() => ({}));
+          setAuthError(errData.error || "Sign-in failed. Please try again.");
           setIsLoading(false);
           return;
         }
@@ -220,7 +249,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await fetchUser();
         }
       } catch (err) {
-        console.error("Token exchange error:", err);
+        const msg = err instanceof Error ? err.message : "Sign-in failed. Please try again.";
+        setAuthError(msg);
         setIsLoading(false);
       }
     })();
@@ -228,15 +258,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async () => {
     try {
+      clearAuthError();
       await promptAsync();
     } catch (err) {
-      console.error("Login error:", err);
+      const msg = err instanceof Error ? err.message : "Failed to open sign-in. Please try again.";
+      setAuthError(msg);
     }
-  }, [promptAsync]);
+  }, [promptAsync, clearAuthError]);
 
   const loginAsGuest = useCallback(async () => {
     try {
       setIsLoading(true);
+      clearAuthError();
       await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
       await SecureStore.deleteItemAsync(IS_GUEST_KEY);
       const token = await createGuestSession();
@@ -248,20 +281,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       await fetchUser();
     } catch (err) {
-      console.error("Guest login error:", err);
+      const msg = err instanceof Error ? err.message : "Failed to continue as guest.";
+      setAuthError(msg);
       setIsLoading(false);
     }
-  }, [createGuestSession, fetchUser]);
+  }, [createGuestSession, fetchUser, clearAuthError]);
 
   const logout = useCallback(async () => {
     try {
       const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
       if (token) {
         const apiBase = getApiBaseUrl();
-        await fetch(`${apiBase}/api/mobile-auth/logout`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await authFetch(
+          `${apiBase}/api/mobile-auth/logout`,
+          { method: "POST", headers: { Authorization: `Bearer ${token}` } },
+        ).catch(() => {});
       }
     } catch {
     } finally {
@@ -281,10 +315,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         isGuest,
+        authError,
         login,
         loginAsGuest,
         logout,
         refreshUser: fetchUser,
+        clearAuthError,
       }}
     >
       {children}

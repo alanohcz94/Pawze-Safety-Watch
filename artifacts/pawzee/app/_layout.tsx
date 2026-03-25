@@ -8,7 +8,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -57,11 +57,15 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
+  const handleError = useCallback((error: Error, stackTrace: string) => {
+    console.error("[ErrorBoundary] Uncaught error:", error.message, stackTrace);
+  }, []);
+
   if (!fontsLoaded && !fontError) return null;
 
   return (
     <SafeAreaProvider>
-      <ErrorBoundary>
+      <ErrorBoundary onError={handleError}>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <SettingsProvider>
