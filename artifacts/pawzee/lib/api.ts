@@ -61,6 +61,18 @@ export interface VetClinic {
   emergency: boolean;
 }
 
+async function safeFetch(
+  input: string,
+  init?: RequestInit,
+  userMessage = "Network error. Please check your connection and try again.",
+): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch {
+    throw new Error(userMessage);
+  }
+}
+
 function normalizeHazardItem(hazard: Omit<HazardItem, "userHasConfirmed"> & {
   userHasConfirmed?: boolean;
 }): HazardItem {
@@ -77,9 +89,11 @@ export async function fetchHazards(lat: number, lng: number, radius?: number): P
     lng: String(lng),
   });
   if (radius) params.set("radius", String(radius));
-  const res = await fetch(`${base}/api/hazards?${params}`, {
-    headers: await getAuthHeaders(),
-  });
+  const res = await safeFetch(
+    `${base}/api/hazards?${params}`,
+    { headers: await getAuthHeaders() },
+    "Unable to load hazards. Please check your connection.",
+  );
   if (!res.ok) throw new Error("Failed to fetch hazards");
   const data = await res.json();
   return data.hazards.map(normalizeHazardItem);
@@ -92,14 +106,18 @@ export async function createHazard(body: {
   photoUrl?: string | null;
 }): Promise<HazardItem> {
   const base = getApiBaseUrl();
-  const res = await fetch(`${base}/api/hazards`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(await getAuthHeaders()),
+  const res = await safeFetch(
+    `${base}/api/hazards`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(await getAuthHeaders()),
+      },
+      body: JSON.stringify(body),
     },
-    body: JSON.stringify(body),
-  });
+    "Unable to report hazard. Please check your connection.",
+  );
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Failed" }));
     throw new Error(err.error || "Failed to create hazard");
@@ -110,14 +128,18 @@ export async function createHazard(body: {
 
 export async function confirmHazard(id: string, lat: number, lng: number): Promise<HazardItem> {
   const base = getApiBaseUrl();
-  const res = await fetch(`${base}/api/hazards/${id}/confirm`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(await getAuthHeaders()),
+  const res = await safeFetch(
+    `${base}/api/hazards/${id}/confirm`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(await getAuthHeaders()),
+      },
+      body: JSON.stringify({ lat, lng }),
     },
-    body: JSON.stringify({ lat, lng }),
-  });
+    "Unable to confirm hazard. Please check your connection.",
+  );
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Failed" }));
     throw new Error(err.error || "Failed to confirm hazard");
@@ -128,14 +150,18 @@ export async function confirmHazard(id: string, lat: number, lng: number): Promi
 
 export async function updateHazardPhoto(id: string, photoUrl: string): Promise<HazardItem> {
   const base = getApiBaseUrl();
-  const res = await fetch(`${base}/api/hazards/${id}/photo`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      ...(await getAuthHeaders()),
+  const res = await safeFetch(
+    `${base}/api/hazards/${id}/photo`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(await getAuthHeaders()),
+      },
+      body: JSON.stringify({ photoUrl }),
     },
-    body: JSON.stringify({ photoUrl }),
-  });
+    "Unable to update photo. Please check your connection.",
+  );
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Failed" }));
     throw new Error(err.error || "Failed to update hazard photo");
@@ -151,9 +177,11 @@ export async function fetchHazardSummary(lat: number, lng: number, radius?: numb
     lng: String(lng),
   });
   if (radius) params.set("radius", String(radius));
-  const res = await fetch(`${base}/api/hazards/summary?${params}`, {
-    headers: await getAuthHeaders(),
-  });
+  const res = await safeFetch(
+    `${base}/api/hazards/summary?${params}`,
+    { headers: await getAuthHeaders() },
+    "Unable to load hazard summary. Please check your connection.",
+  );
   if (!res.ok) throw new Error("Failed to fetch summary");
   return res.json();
 }
@@ -173,11 +201,15 @@ export async function uploadPhoto(uri: string): Promise<string> {
   };
   formData.append("photo", photoBlob as unknown as Blob);
 
-  const res = await fetch(`${base}/api/upload`, {
-    method: "POST",
-    headers: await getAuthHeaders(),
-    body: formData,
-  });
+  const res = await safeFetch(
+    `${base}/api/upload`,
+    {
+      method: "POST",
+      headers: await getAuthHeaders(),
+      body: formData,
+    },
+    "Unable to upload photo. Please check your connection.",
+  );
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Upload failed" }));
@@ -190,9 +222,11 @@ export async function uploadPhoto(uri: string): Promise<string> {
 
 export async function fetchProfileStats(): Promise<ProfileStats> {
   const base = getApiBaseUrl();
-  const res = await fetch(`${base}/api/profile`, {
-    headers: await getAuthHeaders(),
-  });
+  const res = await safeFetch(
+    `${base}/api/profile`,
+    { headers: await getAuthHeaders() },
+    "Unable to load profile. Please check your connection.",
+  );
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Failed" }));
@@ -205,14 +239,18 @@ export async function fetchProfileStats(): Promise<ProfileStats> {
 
 export async function updateProfileImage(profileImageUrl: string): Promise<string> {
   const base = getApiBaseUrl();
-  const res = await fetch(`${base}/api/profile/image`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      ...(await getAuthHeaders()),
+  const res = await safeFetch(
+    `${base}/api/profile/image`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(await getAuthHeaders()),
+      },
+      body: JSON.stringify({ profileImageUrl }),
     },
-    body: JSON.stringify({ profileImageUrl }),
-  });
+    "Unable to update profile image. Please check your connection.",
+  );
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Failed" }));
@@ -225,10 +263,14 @@ export async function updateProfileImage(profileImageUrl: string): Promise<strin
 
 export async function deleteProfileAccount(): Promise<void> {
   const base = getApiBaseUrl();
-  const res = await fetch(`${base}/api/profile`, {
-    method: "DELETE",
-    headers: await getAuthHeaders(),
-  });
+  const res = await safeFetch(
+    `${base}/api/profile`,
+    {
+      method: "DELETE",
+      headers: await getAuthHeaders(),
+    },
+    "Unable to delete account. Please check your connection.",
+  );
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Failed" }));
@@ -243,9 +285,11 @@ export async function fetchNearbyVets(lat: number, lng: number, radius?: number)
     lng: String(lng),
   });
   if (radius) params.set("radius", String(radius));
-  const res = await fetch(`${base}/api/vets/nearby?${params}`, {
-    headers: await getAuthHeaders(),
-  });
+  const res = await safeFetch(
+    `${base}/api/vets/nearby?${params}`,
+    { headers: await getAuthHeaders() },
+    "Unable to load nearby vets. Please check your connection.",
+  );
   if (!res.ok) throw new Error("Failed to fetch nearby vets");
   const data = await res.json();
   return data.vets;

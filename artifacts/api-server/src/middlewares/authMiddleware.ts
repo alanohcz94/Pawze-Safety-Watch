@@ -4,6 +4,7 @@ import type { AuthUser } from "@workspace/api-zod";
 import {
   clearSession,
   getOidcConfig,
+  invalidateOidcConfig,
   getSessionId,
   getSession,
   updateSession,
@@ -26,6 +27,16 @@ declare global {
   }
 }
 
+function isOidcKeyError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return (
+    msg.includes("no matching key") ||
+    msg.includes("signature verification") ||
+    msg.includes("JWKSNoMatchingKey") ||
+    msg.includes("JWTClaimValidationFailed")
+  );
+}
+
 async function refreshIfExpired(
   sid: string,
   session: SessionData,
@@ -35,12 +46,9 @@ async function refreshIfExpired(
 
   if (!session.refresh_token) return null;
 
-  try {
+  const doRefresh = async (): Promise<SessionData> => {
     const config = await getOidcConfig();
-    const tokens = await oidc.refreshTokenGrant(
-      config,
-      session.refresh_token,
-    );
+    const tokens = await oidc.refreshTokenGrant(config, session.refresh_token!);
     session.access_token = tokens.access_token;
     session.refresh_token = tokens.refresh_token ?? session.refresh_token;
     session.expires_at = tokens.expiresIn()
@@ -48,7 +56,20 @@ async function refreshIfExpired(
       : session.expires_at;
     await updateSession(sid, session);
     return session;
-  } catch {
+  };
+
+  try {
+    return await doRefresh();
+  } catch (err) {
+    if (isOidcKeyError(err)) {
+      console.warn("OIDC key error on token refresh — re-fetching discovery and retrying once");
+      invalidateOidcConfig();
+      try {
+        return await doRefresh();
+      } catch {
+        return null;
+      }
+    }
     return null;
   }
 }

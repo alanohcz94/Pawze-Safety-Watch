@@ -117,7 +117,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const res = await fetch(`${apiBase}/api/auth/user`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
+        if (!res.ok) {
+          return { user: null };
+        }
         return res.json();
       };
 
