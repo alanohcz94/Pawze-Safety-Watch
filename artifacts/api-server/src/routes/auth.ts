@@ -13,8 +13,9 @@ import {
   usersTable,
   hazardsTable,
   hazardConfirmationsTable,
+  mobileAuthStatesTable,
 } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { and, eq, lt } from "drizzle-orm";
 import {
   clearSession,
   getOidcConfig,
@@ -31,21 +32,7 @@ import {
 
 const OIDC_COOKIE_TTL = 10 * 60 * 1000;
 
-const MOBILE_STATE_TTL = 10 * 60 * 1000;
-
-interface MobileAuthState {
-  codeVerifier: string;
-  nonce: string;
-  guestToken: string | null;
-  expiresAt: number;
-}
-const mobileAuthStates = new Map<string, MobileAuthState>();
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, val] of mobileAuthStates) {
-    if (val.expiresAt < now) mobileAuthStates.delete(key);
-  }
-}, 60_000).unref();
+const MOBILE_STATE_TTL_MINUTES = 10;
 
 const router: IRouter = Router();
 
@@ -285,12 +272,20 @@ router.get("/mobile-auth/start", async (req: Request, res: Response) => {
       ? req.query.guest_token
       : null;
 
-    mobileAuthStates.set(state, {
+    const expiresAt = new Date(Date.now() + MOBILE_STATE_TTL_MINUTES * 60 * 1000);
+
+    await db.insert(mobileAuthStatesTable).values({
+      state,
       codeVerifier,
       nonce,
       guestToken,
-      expiresAt: Date.now() + MOBILE_STATE_TTL,
+      expiresAt,
+      used: false,
     });
+
+    await db.delete(mobileAuthStatesTable).where(
+      lt(mobileAuthStatesTable.expiresAt, new Date())
+    );
 
     const redirectTo = oidc.buildAuthorizationUrl(config, {
       redirect_uri: callbackUrl,
@@ -320,13 +315,27 @@ router.get("/mobile-auth/callback", async (req: Request, res: Response) => {
       return;
     }
 
-    const authState = mobileAuthStates.get(queryState);
-    if (!authState || authState.expiresAt < Date.now()) {
-      mobileAuthStates.delete(queryState);
+    const [authState] = await db
+      .select()
+      .from(mobileAuthStatesTable)
+      .where(
+        and(
+          eq(mobileAuthStatesTable.state, queryState),
+          eq(mobileAuthStatesTable.used, false),
+        )
+      )
+      .limit(1);
+
+    if (!authState || authState.expiresAt < new Date()) {
+      await db.delete(mobileAuthStatesTable).where(eq(mobileAuthStatesTable.state, queryState));
       res.redirect("pawzee://auth-callback?error=expired_state");
       return;
     }
-    mobileAuthStates.delete(queryState);
+
+    await db
+      .update(mobileAuthStatesTable)
+      .set({ used: true })
+      .where(eq(mobileAuthStatesTable.state, queryState));
 
     const currentUrl = new URL(
       `${callbackUrl}?${new URL(req.url, `http://${req.headers.host}`).searchParams}`,

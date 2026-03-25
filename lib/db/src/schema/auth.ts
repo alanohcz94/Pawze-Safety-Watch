@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, jsonb, pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
+import { boolean, index, jsonb, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
 export const sessionsTable = pgTable(
   "sessions",
@@ -23,3 +23,18 @@ export const usersTable = pgTable("users", {
 
 export type UpsertUser = typeof usersTable.$inferInsert;
 export type User = typeof usersTable.$inferSelect;
+
+export const mobileAuthStatesTable = pgTable(
+  "mobile_auth_states",
+  {
+    state: varchar("state").primaryKey(),
+    codeVerifier: text("code_verifier").notNull(),
+    nonce: text("nonce").notNull(),
+    guestToken: text("guest_token"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    used: boolean("used").notNull().default(false),
+  },
+  (table) => [index("IDX_mobile_auth_states_expires").on(table.expiresAt)],
+);
+
+export type MobileAuthState = typeof mobileAuthStatesTable.$inferSelect;
