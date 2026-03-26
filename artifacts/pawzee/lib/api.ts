@@ -3,6 +3,7 @@ import { Platform } from "react-native";
 
 function getApiBaseUrl(): string {
   const domain = process.env.EXPO_PUBLIC_DOMAIN;
+  console.log("domain ", domain)
   if (domain) {
     return `https://${domain}`;
   }
