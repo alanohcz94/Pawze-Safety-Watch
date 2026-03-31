@@ -6,6 +6,7 @@ import {
   Platform,
   ActivityIndicator,
   Image,
+  ScrollView,
 } from "react-native";
 import * as Notifications from "expo-notifications";
 import MapViewWrapper from "@/components/MapViewWrapper";
@@ -788,25 +789,33 @@ export default function MapScreen() {
           </Pressable>
         </View>
 
-        <View style={styles.dashboardContainer}>
-          <SafetySummaryDashboard
-            summary={activeAreaSummary}
-            locationName={activeAreaName}
-            loading={activeAreaSummaryLoading}
-            showingSearchLocation={showingSearchArea}
-            onBackToCurrentLocation={handleRecenter}
-            onViewChange={handleSafetySummaryViewChange}
-          />
-        </View>
-
-        {showWeatherDashboard && (
+        <ScrollView
+          style={styles.bottomDashboardScroll}
+          showsVerticalScrollIndicator={false}
+          nestedScrollEnabled
+          scrollEnabled
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.dashboardContainer}>
-            <WeatherReportBar
-              weather={activeAreaWeather}
-              loading={activeAreaWeatherLoading}
+            <SafetySummaryDashboard
+              summary={activeAreaSummary}
+              locationName={activeAreaName}
+              loading={activeAreaSummaryLoading}
+              showingSearchLocation={showingSearchArea}
+              onBackToCurrentLocation={handleRecenter}
+              onViewChange={handleSafetySummaryViewChange}
             />
           </View>
-        )}
+
+          {showWeatherDashboard && (
+            <View style={styles.dashboardContainer}>
+              <WeatherReportBar
+                weather={activeAreaWeather}
+                loading={activeAreaWeatherLoading}
+              />
+            </View>
+          )}
+        </ScrollView>
       </View>
 
       {/* Sheets */}

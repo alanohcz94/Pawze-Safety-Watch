@@ -97,8 +97,11 @@ export function createStyles(r: ResponsiveUtils) {
       right: 0,
       paddingHorizontal: r.rs(16),
       gap: 8,
-      maxHeight: "48%",
+      maxHeight: r.height * 0.62,
       zIndex: 20,
+    },
+    bottomDashboardScroll: {
+      flexGrow: 0,
     },
     bottomControlRow: {
       flexDirection: "row",

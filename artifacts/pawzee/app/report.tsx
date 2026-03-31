@@ -192,6 +192,13 @@ export default function ReportScreen() {
             Your current GPS location will be used as the hazard pin
           </Text>
 
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[
+              styles.step2ScrollContent,
+              { paddingBottom: insets.bottom + 20 },
+            ]}
+          >
           <View style={styles.confirmCard}>
             <HazardIcon category={selectedCategory!} size={56} />
             <Text style={styles.confirmCategory}>{config.label}</Text>
@@ -311,6 +318,7 @@ export default function ReportScreen() {
               </>
             )}
           </Pressable>
+          </ScrollView>
         </View>
       )}
     </View>

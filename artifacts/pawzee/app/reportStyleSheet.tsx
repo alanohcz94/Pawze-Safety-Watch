@@ -13,6 +13,9 @@ export function createStyles(r: ResponsiveUtils) {
       alignItems: "center",
       paddingHorizontal: r.rs(16),
       paddingVertical: 12,
+      maxWidth: r.isTablet ? 600 : undefined,
+      alignSelf: r.isTablet ? ("center" as const) : undefined,
+      width: "100%",
     },
     backBtn: {
       width: Math.max(r.rs(40), 44),
@@ -61,6 +64,12 @@ export function createStyles(r: ResponsiveUtils) {
     stepContent: {
       flex: 1,
       paddingHorizontal: r.rs(20),
+      maxWidth: r.isTablet ? 600 : undefined,
+      alignSelf: r.isTablet ? ("center" as const) : undefined,
+      width: "100%",
+    },
+    step2ScrollContent: {
+      paddingTop: 4,
     },
     stepTitle: {
       fontSize: r.rf(24),
