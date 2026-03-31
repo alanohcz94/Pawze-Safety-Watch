@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -16,7 +16,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { styles } from "./reportStyleSheet";
+import { createStyles } from "./reportStyleSheet";
+import { useResponsive } from "@/lib/responsive";
 import Colors from "@/constants/colors";
 import { HazardIcon } from "@/components/HazardIcon";
 import {
@@ -29,6 +30,8 @@ import { prepareImage } from "@/lib/images";
 import { invalidateHazardQueries } from "@/lib/queryKeys";
 
 export default function ReportScreen() {
+  const r = useResponsive();
+  const styles = useMemo(() => createStyles(r), [r]);
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);

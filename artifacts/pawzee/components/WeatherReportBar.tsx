@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Colors from "@/constants/colors";
@@ -7,7 +7,8 @@ import {
   formatForecastHour,
   getWeatherVisual,
 } from "@/lib/weather";
-import { styles } from "./componentStyleSheet/StyleSheetWeatherReportBar";
+import { createStyles } from "./componentStyleSheet/StyleSheetWeatherReportBar";
+import { useResponsive } from "@/lib/responsive";
 
 interface WeatherReportBarProps {
   weather: AreaWeatherReport | null;
@@ -20,6 +21,9 @@ export function WeatherReportBar({
   weather,
   loading = false,
 }: WeatherReportBarProps) {
+  const r = useResponsive();
+  const styles = useMemo(() => createStyles(r), [r]);
+
   return (
     <View style={styles.container}>
       <ScrollView

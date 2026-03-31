@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text } from "react-native";
 import { Marker } from "react-native-maps";
 import { HazardIcon } from "./HazardIcon";
 import type { HazardItem } from "@/lib/api";
 import type { HazardCategory } from "@/lib/hazards";
-import { styles } from "./componentStyleSheet/StyleSheetHazardMarker";
+import { createStyles } from "./componentStyleSheet/StyleSheetHazardMarker";
+import { useResponsive } from "@/lib/responsive";
 
 interface HazardMarkerProps {
   hazard: HazardItem;
@@ -12,6 +13,9 @@ interface HazardMarkerProps {
 }
 
 export function HazardMarker({ hazard, onPress }: HazardMarkerProps) {
+  const r = useResponsive();
+  const styles = useMemo(() => createStyles(r), [r]);
+
   return (
     <Marker
       coordinate={{ latitude: hazard.lat, longitude: hazard.lng }}
@@ -37,6 +41,9 @@ interface ClusterMarkerProps {
 }
 
 export function ClusterMarker({ count, coordinate, onPress }: ClusterMarkerProps) {
+  const r = useResponsive();
+  const styles = useMemo(() => createStyles(r), [r]);
+
   return (
     <Marker coordinate={coordinate} onPress={onPress} tracksViewChanges={false}>
       <View style={styles.clusterContainer}>
@@ -47,4 +54,3 @@ export function ClusterMarker({ count, coordinate, onPress }: ClusterMarkerProps
     </Marker>
   );
 }
-

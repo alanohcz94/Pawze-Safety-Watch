@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -18,9 +18,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/lib/auth";
 import { ALERT_RADIUS_OPTIONS, useSettings } from "@/lib/settings";
-import { styles } from "./componentStyleSheet/StyleSheetProfileMenu";
-
-const DRAWER_WIDTH = 300;
+import { createStyles } from "./componentStyleSheet/StyleSheetProfileMenu";
+import { useResponsive } from "@/lib/responsive";
 
 interface ProfileMenuProps {
   visible: boolean;
@@ -28,6 +27,9 @@ interface ProfileMenuProps {
 }
 
 export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
+  const r = useResponsive();
+  const styles = useMemo(() => createStyles(r), [r]);
+
   const insets = useSafeAreaInsets();
   const { user, isAuthenticated, isGuest, login, loginAsGuest, logout, authError, clearAuthError } =
     useAuth();
@@ -40,11 +42,17 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
   const [supportMessage, setSupportMessage] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
 
-  const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
+  const drawerWidthRef = useRef(r.drawerWidth);
+  const slideAnim = useRef(new Animated.Value(-r.drawerWidth)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    drawerWidthRef.current = r.drawerWidth;
+  }, [r.drawerWidth]);
+
+  useEffect(() => {
     if (visible) {
+      slideAnim.setValue(-drawerWidthRef.current);
       setModalVisible(true);
       Animated.parallel([
         Animated.timing(slideAnim, {
@@ -61,7 +69,7 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
     } else {
       Animated.parallel([
         Animated.timing(slideAnim, {
-          toValue: -DRAWER_WIDTH,
+          toValue: -drawerWidthRef.current,
           duration: 200,
           useNativeDriver: true,
         }),
@@ -485,10 +493,10 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
                         borderColor: "#FF6B5B",
                       }}
                     >
-                      <Text style={{ color: "#CC3322", fontSize: 13, textAlign: "center" }}>
+                      <Text style={{ color: "#CC3322", fontSize: r.rf(13), textAlign: "center" }}>
                         {authError}
                       </Text>
-                      <Text style={{ color: "#CC3322", fontSize: 11, textAlign: "center", marginTop: 2 }}>
+                      <Text style={{ color: "#CC3322", fontSize: r.rf(11), textAlign: "center", marginTop: 2 }}>
                         Tap to dismiss
                       </Text>
                     </Pressable>

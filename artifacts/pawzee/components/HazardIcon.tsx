@@ -2,7 +2,9 @@ import React from "react";
 import { View } from "react-native";
 import { MaterialCommunityIcons, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { HAZARD_CONFIGS, type HazardCategory } from "@/lib/hazards";
-import { styles } from "./componentStyleSheet/StyleSheetHazardIcon";
+import { createStyles } from "./componentStyleSheet/StyleSheetHazardIcon";
+
+const styles = createStyles();
 
 type MCIName = React.ComponentProps<typeof MaterialCommunityIcons>["name"];
 type IonName = React.ComponentProps<typeof Ionicons>["name"];

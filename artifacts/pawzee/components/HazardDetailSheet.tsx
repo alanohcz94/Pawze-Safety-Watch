@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -31,7 +31,8 @@ import {
   getHazardDetailSheetState,
 } from "../lib/hazardDetailSheet";
 import { invalidateHazardQueries } from "@/lib/queryKeys";
-import { styles } from "./componentStyleSheet/StyleSheetHazardDetailSheet";
+import { createStyles } from "./componentStyleSheet/StyleSheetHazardDetailSheet";
+import { useResponsive } from "@/lib/responsive";
 
 type SheetView = "sheet" | "photo";
 type PhotoSource = "camera" | "library";
@@ -59,6 +60,8 @@ export function HazardDetailSheet({
   userLng,
   onHazardUpdated,
 }: HazardDetailSheetProps) {
+  const r = useResponsive();
+  const styles = useMemo(() => createStyles(r), [r]);
   const { isAuthenticated, login } = useAuth();
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState(false);

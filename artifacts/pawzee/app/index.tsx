@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,8 @@ import {
 import * as Notifications from "expo-notifications";
 import MapViewWrapper from "@/components/MapViewWrapper";
 import type MapView from "react-native-maps";
-import { styles } from "./indexStyleSheet";
+import { createStyles } from "./indexStyleSheet";
+import { useResponsive } from "@/lib/responsive";
 import {
   DEFAULT_REGION,
   CLUSTER_DISTANCE,
@@ -172,7 +173,7 @@ const HazardMap = React.memo(function HazardMap({
   return (
     <MapViewWrapper
       ref={mapRef}
-      style={styles.map}
+      style={{ flex: 1 }}
       initialRegion={initialRegion}
       onRegionChangeComplete={onRegionChangeComplete}
       showsUserLocation
@@ -213,6 +214,8 @@ const HazardMap = React.memo(function HazardMap({
 });
 
 export default function MapScreen() {
+  const r = useResponsive();
+  const styles = useMemo(() => createStyles(r), [r]);
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const mapRef = useRef<MapView>(null);

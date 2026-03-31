@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import {
   View,
   TextInput,
@@ -15,7 +15,8 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
-import { styles } from "./componentStyleSheet/StyleSheetSearchBar";
+import { createStyles } from "./componentStyleSheet/StyleSheetSearchBar";
+import { useResponsive } from "@/lib/responsive";
 
 export interface SearchResult {
   label: string;
@@ -45,6 +46,8 @@ export function SearchBar({
   onRecenter,
   recenterDisabled = false,
 }: SearchBarProps) {
+  const r = useResponsive();
+  const styles = useMemo(() => createStyles(r), [r]);
   const insets = useSafeAreaInsets();
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [query, setQuery] = useState("");

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -24,7 +24,8 @@ import {
   type ProfileStats,
 } from "@/lib/api";
 import { prepareImage } from "@/lib/images";
-import { styles } from "./profileStyleSheet";
+import { createStyles } from "./profileStyleSheet";
+import { useResponsive } from "@/lib/responsive";
 
 const EMPTY_STATS: ProfileStats = {
   hazardsReported: 0,
@@ -96,6 +97,8 @@ function buildBadges(stats: ProfileStats) {
 }
 
 export default function ProfileScreen() {
+  const r = useResponsive();
+  const styles = useMemo(() => createStyles(r), [r]);
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const {

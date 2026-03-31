@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -14,7 +14,8 @@ import Colors from "@/constants/colors";
 import { fetchNearbyVets, type VetClinic } from "@/lib/api";
 import { formatDistance, haversineDistance } from "@/lib/hazards";
 import { SINGAPORE_ER_VETS } from "@/constants/constantVariable";
-import { styles } from "./componentStyleSheet/StyleSheetEmergencyVetSheet";
+import { createStyles } from "./componentStyleSheet/StyleSheetEmergencyVetSheet";
+import { useResponsive } from "@/lib/responsive";
 
 const VET_SEARCH_RADIUS_METERS = 8000;
 
@@ -44,6 +45,8 @@ export function EmergencyVetSheet({
   userLat,
   userLng,
 }: EmergencyVetSheetProps) {
+  const r = useResponsive();
+  const styles = useMemo(() => createStyles(r), [r]);
   const [loading, setLoading] = useState(false);
   const [vets, setVets] = useState<VetClinic[]>([]);
   const [searchDone, setSearchDone] = useState(false);

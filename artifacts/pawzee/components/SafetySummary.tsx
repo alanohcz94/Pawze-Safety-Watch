@@ -5,7 +5,8 @@ import Colors from "@/constants/colors";
 import { HazardIcon } from "./HazardIcon";
 import { HAZARD_CONFIGS, type HazardCategory } from "@/lib/hazards";
 import type { HazardSummary } from "@/lib/api";
-import { styles } from "./componentStyleSheet/StyleSheetSafetySummary";
+import { createStyles } from "./componentStyleSheet/StyleSheetSafetySummary";
+import { useResponsive } from "@/lib/responsive";
 
 interface SafetySummaryProps {
   summary: HazardSummary | null;
@@ -26,6 +27,8 @@ export function SafetySummaryDashboard({
   onBackToCurrentLocation,
   onViewChange,
 }: SafetySummaryProps) {
+  const r = useResponsive();
+  const styles = useMemo(() => createStyles(r), [r]);
   const [view, setView] = useState<SummaryView>("summary");
 
   useEffect(() => {
