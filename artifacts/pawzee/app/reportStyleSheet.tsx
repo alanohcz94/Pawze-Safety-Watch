@@ -233,10 +233,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    paddingVertical: 16,
+    paddingVertical: 10,
     borderRadius: 14,
     backgroundColor: Colors.primary,
-    marginTop: 12,
+    marginTop: 5,
   },
   submitBtnDisabled: {
     opacity: 0.6,

@@ -303,7 +303,7 @@ export default function ReportScreen() {
               <ActivityIndicator size="small" color="#FFF" />
             ) : (
               <>
-                <Ionicons name="checkmark-circle" size={22} color="#FFF" />
+                <Ionicons name="checkmark-circle" size={24} color="#FFF" />
                 <Text style={styles.submitBtnText}>Submit Report</Text>
               </>
             )}
