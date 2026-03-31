@@ -70,12 +70,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_400Regular",
     color: Colors.textSecondary,
-    marginBottom: 14,
+    marginBottom: 10,
   },
   categoryGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
+    gap: 8,
     paddingBottom: 40,
   },
   categoryItem: {
@@ -107,14 +107,14 @@ const styles = StyleSheet.create({
   },
   photoActions: {
     flexDirection: "row",
-    gap: 16,
-    marginTop: 12,
+    gap: 8,
+    marginTop: 6,
     width: "100%",
   },
   photoActionBtn: {
     flex: 1,
     alignItems: "center",
-    gap: 12,
+    gap: 8,
   },
   photoActionIcon: {
     width: 72,
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 24,
     alignItems: "center",
-    gap: 12,
+    gap: 8,
     marginTop: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
