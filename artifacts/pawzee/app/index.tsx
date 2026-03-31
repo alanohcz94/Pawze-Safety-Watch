@@ -703,8 +703,8 @@ export default function MapScreen() {
       <HazardMap
         hazards={hazards}
         initialRegion={initialRegion}
-        mapPaddingBottom={insets.bottom + 310}
-        mapPaddingTop={insets.top + 72}
+        mapPaddingBottom={insets.bottom + r.rs(310)}
+        mapPaddingTop={insets.top + r.rs(72)}
         mapRef={mapRef}
         onClusterPress={handleClusterPress}
         onHazardPress={handleHazardPress}
@@ -725,7 +725,7 @@ export default function MapScreen() {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }}
       >
-        <Ionicons name="menu" size={22} color={Colors.text} />
+        <Ionicons name="menu" size={r.rs(22)} color={Colors.text} />
       </Pressable>
       )}
 
@@ -740,7 +740,7 @@ export default function MapScreen() {
             {loadingStepCounter ? (
               <ActivityIndicator size="small" color={Colors.primary} />
             ) : (
-              <Ionicons name="footsteps" size={16} color={Colors.primary} />
+              <Ionicons name="footsteps" size={r.rs(16)} color={Colors.primary} />
             )}
           </View>
           <View style={styles.stepCounterContent}>
@@ -767,7 +767,7 @@ export default function MapScreen() {
           <Pressable style={styles.emergencyBtn} onPress={handleVetPress}>
             <MaterialCommunityIcons
               name="hospital-building"
-              size={22}
+              size={r.rs(22)}
               color={Colors.primary}
             />
           </Pressable>
@@ -784,7 +784,7 @@ export default function MapScreen() {
 
           {/* Report Hazard - Bottom Right */}
           <Pressable style={styles.reportBtn} onPress={handleReportPress}>
-            <Ionicons name="warning" size={22} color={Colors.warning} />
+            <Ionicons name="warning" size={r.rs(22)} color={Colors.warning} />
           </Pressable>
         </View>
 

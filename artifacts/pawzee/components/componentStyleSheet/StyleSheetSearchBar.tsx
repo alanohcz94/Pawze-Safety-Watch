@@ -82,7 +82,7 @@ export function createStyles(r: ResponsiveUtils) {
       backgroundColor: Colors.surfaceSecondary,
       borderRadius: 12,
       paddingHorizontal: 12,
-      height: r.rs(44),
+      height: Math.max(r.rs(44), 44),
       gap: 8,
     },
     overlayInput: {
