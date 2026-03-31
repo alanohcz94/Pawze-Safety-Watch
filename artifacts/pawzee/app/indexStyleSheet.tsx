@@ -97,7 +97,6 @@ export function createStyles(r: ResponsiveUtils) {
       right: 0,
       paddingHorizontal: r.rs(16),
       gap: 8,
-      maxHeight: r.height * 0.62,
       zIndex: 20,
     },
     bottomDashboardScroll: {

@@ -704,7 +704,7 @@ export default function MapScreen() {
       <HazardMap
         hazards={hazards}
         initialRegion={initialRegion}
-        mapPaddingBottom={insets.bottom + r.rs(310)}
+        mapPaddingBottom={Math.max(insets.bottom, 14) + r.rs(330)}
         mapPaddingTop={insets.top + r.rs(72)}
         mapRef={mapRef}
         onClusterPress={handleClusterPress}
@@ -753,13 +753,18 @@ export default function MapScreen() {
         </View>
       )}
 
-      {/* Bottom Controls */}
+      {/* Bottom Controls — maxHeight derived from available viewport minus top chrome and insets */}
       <View
         style={[
           styles.bottomControls,
           {
             paddingBottom:
               Platform.OS === "web" ? 24 : Math.max(insets.bottom, 14),
+            maxHeight:
+              r.height -
+              insets.top -
+              (Platform.OS === "web" ? 67 : 0) -
+              r.rs(160),
           },
         ]}
       >
