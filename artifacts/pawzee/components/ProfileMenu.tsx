@@ -40,7 +40,7 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
   const [showSupportForm, setShowSupportForm] = useState(false);
   const [supportSubject, setSupportSubject] = useState("Pawzee Support");
   const [supportMessage, setSupportMessage] = useState("");
-  const [modalVisible, setModalVisible] = useState(false);
+  const [panelMounted, setPanelMounted] = useState(false);
 
   const drawerWidthRef = useRef(r.drawerWidth);
   const slideAnim = useRef(new Animated.Value(-r.drawerWidth)).current;
@@ -53,7 +53,7 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
   useEffect(() => {
     if (visible) {
       slideAnim.setValue(-drawerWidthRef.current);
-      setModalVisible(true);
+      setPanelMounted(true);
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: 0,
@@ -79,7 +79,7 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
           useNativeDriver: true,
         }),
       ]).start(() => {
-        setModalVisible(false);
+        setPanelMounted(false);
       });
     }
   }, [visible]);
@@ -127,6 +127,318 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
     setSupportMessage("");
     setShowSupportForm(false);
   };
+
+  const renderDrawerContent = () => (
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={[
+        styles.drawerContent,
+        { paddingBottom: Math.max(insets.bottom, 20) + 16 },
+      ]}
+    >
+      {isAuthenticated && user ? (
+        <>
+          <View style={styles.profileSection}>
+            {!isGuest && user.profileImageUrl ? (
+              <Image
+                source={{ uri: user.profileImageUrl }}
+                style={styles.avatar}
+              />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Ionicons
+                  name={isGuest ? "person-outline" : "person"}
+                  size={24}
+                  color={Colors.textTertiary}
+                />
+              </View>
+            )}
+            <View style={styles.profileInfo}>
+              <Text style={styles.name}>{displayName}</Text>
+              {!isGuest && user.email && (
+                <Text style={styles.email}>{user.email}</Text>
+              )}
+              {isGuest && (
+                <Text style={styles.guestLabel}>Browsing as guest</Text>
+              )}
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          <Pressable style={styles.menuItem} onPress={handleProfile}>
+            <Ionicons
+              name="person-circle-outline"
+              size={20}
+              color={Colors.text}
+            />
+            <Text style={styles.menuItemText}>Profile</Text>
+          </Pressable>
+
+          {isGuest && (
+            <Pressable
+              style={styles.menuItem}
+              onPress={handleUpgradeToReplit}
+            >
+              <Feather name="log-in" size={20} color={Colors.primary} />
+              <Text
+                style={[styles.menuItemText, { color: Colors.primary }]}
+              >
+                Link Replit Account
+              </Text>
+            </Pressable>
+          )}
+
+          <View style={styles.divider} />
+
+          <Pressable
+            style={styles.sectionHeader}
+            onPress={() => setSettingsOpen(!settingsOpen)}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <Ionicons
+                name="settings-outline"
+                size={20}
+                color={Colors.text}
+              />
+              <Text style={styles.sectionHeaderText}>Settings</Text>
+            </View>
+            <Ionicons
+              name={settingsOpen ? "chevron-up" : "chevron-down"}
+              size={18}
+              color={Colors.textSecondary}
+            />
+          </Pressable>
+
+          {settingsOpen && (
+            <View style={styles.sectionBody}>
+              <View style={styles.settingRow}>
+                <View style={styles.settingInfo}>
+                  <Ionicons
+                    name="notifications-outline"
+                    size={18}
+                    color={Colors.text}
+                  />
+                  <Text style={styles.settingLabel}>Notifications</Text>
+                </View>
+                <Switch
+                  value={settings.notifications}
+                  onValueChange={(v) =>
+                    settings.updateSetting("notifications", v)
+                  }
+                  trackColor={{
+                    false: Colors.border,
+                    true: Colors.primaryLight,
+                  }}
+                  thumbColor={
+                    settings.notifications
+                      ? Colors.primary
+                      : Colors.textTertiary
+                  }
+                />
+              </View>
+
+              <View style={styles.settingRow}>
+                <View style={styles.settingInfo}>
+                  <Ionicons
+                    name="radio-outline"
+                    size={18}
+                    color={Colors.text}
+                  />
+                  <Text style={styles.settingLabel}>Alert Radius</Text>
+                </View>
+              </View>
+              <View style={styles.radiusPills}>
+                {ALERT_RADIUS_OPTIONS.map((meters) => (
+                  <Pressable
+                    key={meters}
+                    style={[
+                      styles.radiusPill,
+                      settings.alertRadius === meters &&
+                        styles.radiusPillActive,
+                    ]}
+                    onPress={() =>
+                      settings.updateSetting("alertRadius", meters)
+                    }
+                  >
+                    <Text
+                      style={[
+                        styles.radiusPillText,
+                        settings.alertRadius === meters &&
+                          styles.radiusPillTextActive,
+                      ]}
+                    >
+                      {meters}m
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <View style={styles.settingRow}>
+                <View style={styles.settingInfo}>
+                  <Ionicons
+                    name="mic-outline"
+                    size={18}
+                    color={Colors.textTertiary}
+                  />
+                  <View>
+                    <Text
+                      style={[
+                        styles.settingLabel,
+                        { color: Colors.textTertiary },
+                      ]}
+                    >
+                      Audio Report
+                    </Text>
+                    <Text style={styles.comingSoon}>
+                      (Next Release)
+                    </Text>
+                  </View>
+                </View>
+                <Switch
+                  value={true}
+                  disabled
+                  trackColor={{
+                    false: Colors.border,
+                    true: Colors.primaryLight,
+                  }}
+                  thumbColor={Colors.primary}
+                  style={{ opacity: 0.5 }}
+                />
+              </View>
+
+              <View style={styles.settingRow}>
+                <View style={styles.settingInfo}>
+                  <Ionicons
+                    name="footsteps-outline"
+                    size={18}
+                    color={Colors.text}
+                  />
+                  <Text style={styles.settingLabel}>Step Counter</Text>
+                </View>
+                <Switch
+                  value={settings.stepCounter}
+                  onValueChange={(v) =>
+                    settings.updateSetting("stepCounter", v)
+                  }
+                  trackColor={{
+                    false: Colors.border,
+                    true: Colors.primaryLight,
+                  }}
+                  thumbColor={
+                    settings.stepCounter
+                      ? Colors.primary
+                      : Colors.textTertiary
+                  }
+                />
+              </View>
+            </View>
+          )}
+
+          <View style={styles.divider} />
+
+          <Pressable
+            style={styles.sectionHeader}
+            onPress={() => setHelpOpen(!helpOpen)}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <Ionicons
+                name="help-circle-outline"
+                size={20}
+                color={Colors.text}
+              />
+              <Text style={styles.sectionHeaderText}>
+                Help & Feedback
+              </Text>
+            </View>
+            <Ionicons
+              name={helpOpen ? "chevron-up" : "chevron-down"}
+              size={18}
+              color={Colors.textSecondary}
+            />
+          </Pressable>
+
+          {helpOpen && (
+            <View style={styles.sectionBody}>
+              <Pressable
+                style={styles.menuItem}
+                onPress={() => setShowSupportForm(true)}
+              >
+                <Ionicons
+                  name="help-circle-outline"
+                  size={18}
+                  color={Colors.primary}
+                />
+                <Text
+                  style={[
+                    styles.menuItemText,
+                    { color: Colors.primary },
+                  ]}
+                >
+                  Get Support
+                </Text>
+              </Pressable>
+            </View>
+          )}
+
+          <View style={styles.divider} />
+
+          <Pressable style={styles.menuItem} onPress={handleLogout}>
+            <Feather
+              name={isGuest ? "refresh-cw" : "log-out"}
+              size={20}
+              color={isGuest ? Colors.textSecondary : Colors.danger}
+            />
+            <Text
+              style={[
+                styles.menuItemText,
+                !isGuest && { color: Colors.danger },
+              ]}
+            >
+              Logout
+            </Text>
+          </Pressable>
+        </>
+      ) : (
+        <View style={styles.authActions}>
+          {authError ? (
+            <Pressable
+              onPress={clearAuthError}
+              style={{
+                backgroundColor: "#FFF0EE",
+                borderRadius: 8,
+                padding: 10,
+                marginBottom: 10,
+                borderWidth: 1,
+                borderColor: "#FF6B5B",
+              }}
+            >
+              <Text style={{ color: "#CC3322", fontSize: r.rf(13), textAlign: "center" }}>
+                {authError}
+              </Text>
+              <Text style={{ color: "#CC3322", fontSize: r.rf(11), textAlign: "center", marginTop: 2 }}>
+                Tap to dismiss
+              </Text>
+            </Pressable>
+          ) : null}
+
+          <Pressable style={styles.loginBtn} onPress={handleLogin}>
+            <Feather name="log-in" size={20} color="#FFF" />
+            <Text style={styles.loginBtnText}>Log In with Replit</Text>
+          </Pressable>
+
+          <Pressable style={styles.guestBtn} onPress={handleGuest}>
+            <Ionicons
+              name="person-outline"
+              size={20}
+              color={Colors.primary}
+            />
+            <Text style={styles.guestBtnText}>Continue as Guest</Text>
+          </Pressable>
+        </View>
+      )}
+    </ScrollView>
+  );
 
   const renderSupportFormModal = () => (
     <Modal
@@ -191,10 +503,48 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
     </Modal>
   );
 
+  if (r.isTablet) {
+    if (!panelMounted) {
+      return <>{renderSupportFormModal()}</>;
+    }
+    return (
+      <>
+        <View
+          style={styles.tabletOverlay}
+          pointerEvents="box-none"
+        >
+          <Animated.View
+            style={[styles.backdrop, { opacity: backdropAnim }]}
+            pointerEvents={visible ? "auto" : "none"}
+          >
+            <Pressable style={styles.backdropTouchable} onPress={onClose} />
+          </Animated.View>
+
+          <Animated.View
+            style={[
+              styles.drawerTablet,
+              {
+                paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16),
+                transform: [{ translateX: slideAnim }],
+              },
+            ]}
+          >
+            {renderDrawerContent()}
+            <Pressable style={styles.closeBtn} onPress={onClose}>
+              <Ionicons name="close" size={22} color={Colors.text} />
+            </Pressable>
+          </Animated.View>
+        </View>
+
+        {renderSupportFormModal()}
+      </>
+    );
+  }
+
   return (
     <>
       <Modal
-        visible={modalVisible}
+        visible={panelMounted}
         animationType="none"
         transparent
         onRequestClose={onClose}
@@ -209,315 +559,7 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
               },
             ]}
           >
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={[
-                styles.drawerContent,
-                { paddingBottom: Math.max(insets.bottom, 20) + 16 },
-              ]}
-            >
-              {isAuthenticated && user ? (
-                <>
-                  <View style={styles.profileSection}>
-                    {!isGuest && user.profileImageUrl ? (
-                      <Image
-                        source={{ uri: user.profileImageUrl }}
-                        style={styles.avatar}
-                      />
-                    ) : (
-                      <View style={styles.avatarPlaceholder}>
-                        <Ionicons
-                          name={isGuest ? "person-outline" : "person"}
-                          size={24}
-                          color={Colors.textTertiary}
-                        />
-                      </View>
-                    )}
-                    <View style={styles.profileInfo}>
-                      <Text style={styles.name}>{displayName}</Text>
-                      {!isGuest && user.email && (
-                        <Text style={styles.email}>{user.email}</Text>
-                      )}
-                      {isGuest && (
-                        <Text style={styles.guestLabel}>Browsing as guest</Text>
-                      )}
-                    </View>
-                  </View>
-
-                  <View style={styles.divider} />
-
-                  <Pressable style={styles.menuItem} onPress={handleProfile}>
-                    <Ionicons
-                      name="person-circle-outline"
-                      size={20}
-                      color={Colors.text}
-                    />
-                    <Text style={styles.menuItemText}>Profile</Text>
-                  </Pressable>
-
-                  {isGuest && (
-                    <Pressable
-                      style={styles.menuItem}
-                      onPress={handleUpgradeToReplit}
-                    >
-                      <Feather name="log-in" size={20} color={Colors.primary} />
-                      <Text
-                        style={[styles.menuItemText, { color: Colors.primary }]}
-                      >
-                        Link Replit Account
-                      </Text>
-                    </Pressable>
-                  )}
-
-                  <View style={styles.divider} />
-
-                  <Pressable
-                    style={styles.sectionHeader}
-                    onPress={() => setSettingsOpen(!settingsOpen)}
-                  >
-                    <View style={styles.sectionHeaderLeft}>
-                      <Ionicons
-                        name="settings-outline"
-                        size={20}
-                        color={Colors.text}
-                      />
-                      <Text style={styles.sectionHeaderText}>Settings</Text>
-                    </View>
-                    <Ionicons
-                      name={settingsOpen ? "chevron-up" : "chevron-down"}
-                      size={18}
-                      color={Colors.textSecondary}
-                    />
-                  </Pressable>
-
-                  {settingsOpen && (
-                    <View style={styles.sectionBody}>
-                      <View style={styles.settingRow}>
-                        <View style={styles.settingInfo}>
-                          <Ionicons
-                            name="notifications-outline"
-                            size={18}
-                            color={Colors.text}
-                          />
-                          <Text style={styles.settingLabel}>Notifications</Text>
-                        </View>
-                        <Switch
-                          value={settings.notifications}
-                          onValueChange={(v) =>
-                            settings.updateSetting("notifications", v)
-                          }
-                          trackColor={{
-                            false: Colors.border,
-                            true: Colors.primaryLight,
-                          }}
-                          thumbColor={
-                            settings.notifications
-                              ? Colors.primary
-                              : Colors.textTertiary
-                          }
-                        />
-                      </View>
-
-                      <View style={styles.settingRow}>
-                        <View style={styles.settingInfo}>
-                          <Ionicons
-                            name="radio-outline"
-                            size={18}
-                            color={Colors.text}
-                          />
-                          <Text style={styles.settingLabel}>Alert Radius</Text>
-                        </View>
-                      </View>
-                      <View style={styles.radiusPills}>
-                        {ALERT_RADIUS_OPTIONS.map((meters) => (
-                          <Pressable
-                            key={meters}
-                            style={[
-                              styles.radiusPill,
-                              settings.alertRadius === meters &&
-                                styles.radiusPillActive,
-                            ]}
-                            onPress={() =>
-                              settings.updateSetting("alertRadius", meters)
-                            }
-                          >
-                            <Text
-                              style={[
-                                styles.radiusPillText,
-                                settings.alertRadius === meters &&
-                                  styles.radiusPillTextActive,
-                              ]}
-                            >
-                              {meters}m
-                            </Text>
-                          </Pressable>
-                        ))}
-                      </View>
-
-                      <View style={styles.settingRow}>
-                        <View style={styles.settingInfo}>
-                          <Ionicons
-                            name="mic-outline"
-                            size={18}
-                            color={Colors.textTertiary}
-                          />
-                          <View>
-                            <Text
-                              style={[
-                                styles.settingLabel,
-                                { color: Colors.textTertiary },
-                              ]}
-                            >
-                              Audio Report
-                            </Text>
-                            <Text style={styles.comingSoon}>
-                              (Next Release)
-                            </Text>
-                          </View>
-                        </View>
-                        <Switch
-                          value={true}
-                          disabled
-                          trackColor={{
-                            false: Colors.border,
-                            true: Colors.primaryLight,
-                          }}
-                          thumbColor={Colors.primary}
-                          style={{ opacity: 0.5 }}
-                        />
-                      </View>
-
-                      <View style={styles.settingRow}>
-                        <View style={styles.settingInfo}>
-                          <Ionicons
-                            name="footsteps-outline"
-                            size={18}
-                            color={Colors.text}
-                          />
-                          <Text style={styles.settingLabel}>Step Counter</Text>
-                        </View>
-                        <Switch
-                          value={settings.stepCounter}
-                          onValueChange={(v) =>
-                            settings.updateSetting("stepCounter", v)
-                          }
-                          trackColor={{
-                            false: Colors.border,
-                            true: Colors.primaryLight,
-                          }}
-                          thumbColor={
-                            settings.stepCounter
-                              ? Colors.primary
-                              : Colors.textTertiary
-                          }
-                        />
-                      </View>
-                    </View>
-                  )}
-
-                  <View style={styles.divider} />
-
-                  <Pressable
-                    style={styles.sectionHeader}
-                    onPress={() => setHelpOpen(!helpOpen)}
-                  >
-                    <View style={styles.sectionHeaderLeft}>
-                      <Ionicons
-                        name="help-circle-outline"
-                        size={20}
-                        color={Colors.text}
-                      />
-                      <Text style={styles.sectionHeaderText}>
-                        Help & Feedback
-                      </Text>
-                    </View>
-                    <Ionicons
-                      name={helpOpen ? "chevron-up" : "chevron-down"}
-                      size={18}
-                      color={Colors.textSecondary}
-                    />
-                  </Pressable>
-
-                  {helpOpen && (
-                    <View style={styles.sectionBody}>
-                      <Pressable
-                        style={styles.menuItem}
-                        onPress={() => setShowSupportForm(true)}
-                      >
-                        <Ionicons
-                          name="help-circle-outline"
-                          size={18}
-                          color={Colors.primary}
-                        />
-                        <Text
-                          style={[
-                            styles.menuItemText,
-                            { color: Colors.primary },
-                          ]}
-                        >
-                          Get Support
-                        </Text>
-                      </Pressable>
-                    </View>
-                  )}
-
-                  <View style={styles.divider} />
-
-                  <Pressable style={styles.menuItem} onPress={handleLogout}>
-                    <Feather
-                      name={isGuest ? "refresh-cw" : "log-out"}
-                      size={20}
-                      color={isGuest ? Colors.textSecondary : Colors.danger}
-                    />
-                    <Text
-                      style={[
-                        styles.menuItemText,
-                        !isGuest && { color: Colors.danger },
-                      ]}
-                    >
-                      Logout
-                    </Text>
-                  </Pressable>
-                </>
-              ) : (
-                <View style={styles.authActions}>
-                  {authError ? (
-                    <Pressable
-                      onPress={clearAuthError}
-                      style={{
-                        backgroundColor: "#FFF0EE",
-                        borderRadius: 8,
-                        padding: 10,
-                        marginBottom: 10,
-                        borderWidth: 1,
-                        borderColor: "#FF6B5B",
-                      }}
-                    >
-                      <Text style={{ color: "#CC3322", fontSize: r.rf(13), textAlign: "center" }}>
-                        {authError}
-                      </Text>
-                      <Text style={{ color: "#CC3322", fontSize: r.rf(11), textAlign: "center", marginTop: 2 }}>
-                        Tap to dismiss
-                      </Text>
-                    </Pressable>
-                  ) : null}
-
-                  <Pressable style={styles.loginBtn} onPress={handleLogin}>
-                    <Feather name="log-in" size={20} color="#FFF" />
-                    <Text style={styles.loginBtnText}>Log In with Replit</Text>
-                  </Pressable>
-
-                  <Pressable style={styles.guestBtn} onPress={handleGuest}>
-                    <Ionicons
-                      name="person-outline"
-                      size={20}
-                      color={Colors.primary}
-                    />
-                    <Text style={styles.guestBtnText}>Continue as Guest</Text>
-                  </Pressable>
-                </View>
-              )}
-            </ScrollView>
+            {renderDrawerContent()}
 
             <Pressable style={styles.closeBtn} onPress={onClose}>
               <Ionicons name="close" size={22} color={Colors.text} />

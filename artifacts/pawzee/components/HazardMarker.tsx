@@ -23,7 +23,7 @@ export function HazardMarker({ hazard, onPress }: HazardMarkerProps) {
       tracksViewChanges={false}
     >
       <View style={styles.markerContainer}>
-        <HazardIcon category={hazard.category as HazardCategory} size={36} />
+        <HazardIcon category={hazard.category as HazardCategory} size={r.rs(36)} />
         {hazard.confirmationCount > 0 && (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{hazard.confirmationCount}</Text>

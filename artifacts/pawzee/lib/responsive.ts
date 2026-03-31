@@ -25,7 +25,9 @@ export function useResponsive() {
 
   const drawerWidth = isTablet
     ? Math.min(wp(38), 380)
-    : Math.min(wp(85), 320);
+    : isLargePhone
+      ? Math.min(wp(85), 350)
+      : Math.min(wp(85), 320);
 
   return {
     width,

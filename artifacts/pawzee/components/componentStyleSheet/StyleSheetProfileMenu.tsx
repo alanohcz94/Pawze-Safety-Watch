@@ -2,6 +2,8 @@ import { StyleSheet } from "react-native";
 import Colors from "@/constants/colors";
 import type { ResponsiveUtils } from "@/lib/responsive";
 
+export const absoluteFill = StyleSheet.absoluteFillObject;
+
 export function createStyles(r: ResponsiveUtils) {
   return StyleSheet.create({
     overlay: {
@@ -16,6 +18,28 @@ export function createStyles(r: ResponsiveUtils) {
       shadowOpacity: 0.15,
       shadowRadius: 16,
       elevation: 12,
+    },
+    drawerTablet: {
+      position: "absolute" as const,
+      top: 0,
+      left: 0,
+      bottom: 0,
+      width: r.drawerWidth,
+      backgroundColor: Colors.surface,
+      shadowColor: "#000",
+      shadowOffset: { width: 4, height: 0 },
+      shadowOpacity: 0.18,
+      shadowRadius: 20,
+      elevation: 16,
+      zIndex: 1000,
+    },
+    tabletOverlay: {
+      position: "absolute" as const,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 999,
     },
     drawerContent: {
       paddingHorizontal: r.rs(20),
