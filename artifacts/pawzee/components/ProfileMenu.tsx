@@ -24,9 +24,11 @@ import { useResponsive } from "@/lib/responsive";
 interface ProfileMenuProps {
   visible: boolean;
   onClose: () => void;
+  /** When true, renders as a static persistent side panel (no modal, no animation). Tablet use. */
+  persistent?: boolean;
 }
 
-export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
+export function ProfileMenu({ visible, onClose, persistent = false }: ProfileMenuProps) {
   const r = useResponsive();
   const styles = useMemo(() => createStyles(r), [r]);
 
@@ -51,6 +53,7 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
   }, [r.drawerWidth]);
 
   useEffect(() => {
+    if (persistent) return;
     if (visible) {
       slideAnim.setValue(-drawerWidthRef.current);
       setPanelMounted(true);
@@ -82,7 +85,7 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
         setPanelMounted(false);
       });
     }
-  }, [visible]);
+  }, [visible, persistent]);
 
   const displayName = isGuest
     ? "Guest Pawzer"
@@ -92,26 +95,26 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
 
   const handleLogout = async () => {
     await logout();
-    onClose();
+    if (!persistent) onClose();
   };
 
   const handleLogin = () => {
     login();
-    onClose();
+    if (!persistent) onClose();
   };
 
   const handleGuest = () => {
     loginAsGuest();
-    onClose();
+    if (!persistent) onClose();
   };
 
   const handleUpgradeToReplit = () => {
     login();
-    onClose();
+    if (!persistent) onClose();
   };
 
   const handleProfile = () => {
-    onClose();
+    if (!persistent) onClose();
     router.push("/profile" as never);
   };
 
@@ -290,9 +293,7 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
                     >
                       Audio Report
                     </Text>
-                    <Text style={styles.comingSoon}>
-                      (Next Release)
-                    </Text>
+                    <Text style={styles.comingSoon}>(Next Release)</Text>
                   </View>
                 </View>
                 <Switch
@@ -347,9 +348,7 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
                 size={20}
                 color={Colors.text}
               />
-              <Text style={styles.sectionHeaderText}>
-                Help & Feedback
-              </Text>
+              <Text style={styles.sectionHeaderText}>Help & Feedback</Text>
             </View>
             <Ionicons
               name={helpOpen ? "chevron-up" : "chevron-down"}
@@ -370,10 +369,7 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
                   color={Colors.primary}
                 />
                 <Text
-                  style={[
-                    styles.menuItemText,
-                    { color: Colors.primary },
-                  ]}
+                  style={[styles.menuItemText, { color: Colors.primary }]}
                 >
                   Get Support
                 </Text>
@@ -413,10 +409,23 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
                 borderColor: "#FF6B5B",
               }}
             >
-              <Text style={{ color: "#CC3322", fontSize: r.rf(13), textAlign: "center" }}>
+              <Text
+                style={{
+                  color: "#CC3322",
+                  fontSize: r.rf(13),
+                  textAlign: "center",
+                }}
+              >
                 {authError}
               </Text>
-              <Text style={{ color: "#CC3322", fontSize: r.rf(11), textAlign: "center", marginTop: 2 }}>
+              <Text
+                style={{
+                  color: "#CC3322",
+                  fontSize: r.rf(11),
+                  textAlign: "center",
+                  marginTop: 2,
+                }}
+              >
                 Tap to dismiss
               </Text>
             </Pressable>
@@ -503,44 +512,29 @@ export function ProfileMenu({ visible, onClose }: ProfileMenuProps) {
     </Modal>
   );
 
-  if (r.isTablet) {
-    if (!panelMounted) {
-      return <>{renderSupportFormModal()}</>;
-    }
+  /* ─── Persistent tablet side panel (no modal, no animation) ─── */
+  if (persistent) {
     return (
       <>
         <View
-          style={styles.tabletOverlay}
-          pointerEvents="box-none"
+          style={[
+            styles.persistentPanel,
+            {
+              paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16),
+            },
+          ]}
         >
-          <Animated.View
-            style={[styles.backdrop, { opacity: backdropAnim }]}
-            pointerEvents={visible ? "auto" : "none"}
-          >
-            <Pressable style={styles.backdropTouchable} onPress={onClose} />
-          </Animated.View>
-
-          <Animated.View
-            style={[
-              styles.drawerTablet,
-              {
-                paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16),
-                transform: [{ translateX: slideAnim }],
-              },
-            ]}
-          >
-            {renderDrawerContent()}
-            <Pressable style={styles.closeBtn} onPress={onClose}>
-              <Ionicons name="close" size={22} color={Colors.text} />
-            </Pressable>
-          </Animated.View>
+          <View style={styles.persistentHeader}>
+            <Text style={styles.persistentTitle}>Pawzee</Text>
+          </View>
+          {renderDrawerContent()}
         </View>
-
         {renderSupportFormModal()}
       </>
     );
   }
 
+  /* ─── Phone: animated modal slide-over ─── */
   return (
     <>
       <Modal

@@ -45,9 +45,9 @@ export function createStyles(r: ResponsiveUtils) {
       backgroundColor: Colors.border,
     },
     trailingActionBtn: {
-      width: r.rs(36),
-      height: r.rs(36),
-      borderRadius: r.rs(18),
+      width: Math.max(r.rs(36), 44),
+      height: Math.max(r.rs(36), 44),
+      borderRadius: Math.max(r.rs(18), 22),
       alignItems: "center",
       justifyContent: "center",
       backgroundColor: Colors.primaryLight,

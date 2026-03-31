@@ -8,6 +8,13 @@ export function createStyles(r: ResponsiveUtils) {
       flex: 1,
       backgroundColor: Colors.background,
     },
+    containerTablet: {
+      flexDirection: "row",
+    },
+    mapContent: {
+      flex: 1,
+      position: "relative" as const,
+    },
     loadingContainer: {
       flex: 1,
       alignItems: "center",

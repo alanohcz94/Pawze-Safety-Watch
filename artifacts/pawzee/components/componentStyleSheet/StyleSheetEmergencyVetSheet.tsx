@@ -49,9 +49,9 @@ export function createStyles(r: ResponsiveUtils) {
       color: Colors.text,
     },
     closeBtn: {
-      width: r.rs(36),
-      height: r.rs(36),
-      borderRadius: r.rs(18),
+      width: Math.max(r.rs(36), 44),
+      height: Math.max(r.rs(36), 44),
+      borderRadius: Math.max(r.rs(18), 22),
       backgroundColor: Colors.surfaceSecondary,
       alignItems: "center",
       justifyContent: "center",

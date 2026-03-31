@@ -688,7 +688,18 @@ export default function MapScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, r.isTablet && styles.containerTablet]}>
+      {/* Tablet: persistent side panel always visible */}
+      {r.isTablet && (
+        <ProfileMenu
+          visible={true}
+          onClose={() => {}}
+          persistent
+        />
+      )}
+
+      {/* Map content area (flex:1, relative) */}
+      <View style={styles.mapContent}>
       <HazardMap
         hazards={hazards}
         initialRegion={initialRegion}
@@ -702,7 +713,8 @@ export default function MapScreen() {
         zoomLevel={zoomLevel}
       />
 
-      {/* Top Left - Menu Button  Collapse*/}
+      {/* Top Left - Menu Button (phone only) */}
+      {!r.isTablet && (
       <Pressable
         style={[
           styles.menuBtn,
@@ -715,6 +727,7 @@ export default function MapScreen() {
       >
         <Ionicons name="menu" size={22} color={Colors.text} />
       </Pressable>
+      )}
 
       {showStepCounterChip && (
         <View
@@ -806,10 +819,13 @@ export default function MapScreen() {
         onHazardUpdated={handleHazardUpdated}
       />
 
-      <ProfileMenu
-        visible={showProfile}
-        onClose={() => setShowProfile(false)}
-      />
+      {/* Phone modal profile menu */}
+      {!r.isTablet && (
+        <ProfileMenu
+          visible={showProfile}
+          onClose={() => setShowProfile(false)}
+        />
+      )}
 
       <EmergencyVetSheet
         visible={showVet}
@@ -817,6 +833,7 @@ export default function MapScreen() {
         userLat={userLocation?.lat ?? null}
         userLng={userLocation?.lng ?? null}
       />
+      </View>{/* closes mapContent */}
     </View>
   );
 }
