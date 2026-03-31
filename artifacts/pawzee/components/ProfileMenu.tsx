@@ -512,7 +512,7 @@ export function ProfileMenu({ visible, onClose, persistent = false }: ProfileMen
     </Modal>
   );
 
-  /* ─── Persistent tablet side panel (no modal, no animation) ─── */
+  // Persistent tablet side panel: no modal, no animation, always mounted
   if (persistent) {
     return (
       <>
@@ -534,7 +534,7 @@ export function ProfileMenu({ visible, onClose, persistent = false }: ProfileMen
     );
   }
 
-  /* ─── Phone: animated modal slide-over ─── */
+  // Phone: animated modal slide-over
   return (
     <>
       <Modal

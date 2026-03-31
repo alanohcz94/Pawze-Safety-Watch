@@ -69,9 +69,9 @@ export function createStyles(r: ResponsiveUtils) {
       borderBottomColor: Colors.border,
     },
     overlayBackBtn: {
-      width: r.rs(40),
-      height: r.rs(40),
-      borderRadius: r.rs(20),
+      width: Math.max(r.rs(40), 44),
+      height: Math.max(r.rs(40), 44),
+      borderRadius: Math.max(r.rs(20), 22),
       alignItems: "center",
       justifyContent: "center",
     },

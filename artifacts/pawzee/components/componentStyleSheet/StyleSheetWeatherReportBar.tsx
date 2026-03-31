@@ -62,14 +62,6 @@ export function createStyles(r: ResponsiveUtils) {
       fontFamily: "Inter_400Regular",
       color: Colors.textSecondary,
     },
-    currentIconWrap: {
-      width: r.rs(40),
-      height: r.rs(40),
-      borderRadius: r.rs(20),
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: Colors.surfaceSecondary,
-    },
     divider: {
       height: 1,
       marginTop: 12,
