@@ -1,0 +1,65 @@
+I need you to fix my React Native / Expo app layout properly, not with visual scaling hacks.
+
+Problem summary:
+1. On iPhone:
+- On the home/map screen, the weather card is cut off at the bottom.
+- On the report/review screen, the Submit button cannot be fully seen.
+- This looks like a safe area / bottom spacing issue.
+
+2. On iPad Air:
+- The UI does not adapt well to tablet size.
+- The layout looks like a phone UI stretched or positioned badly.
+- Previous attempts using “scale for iPad” did not work.
+- I do NOT want transform: scale(...) or any fake zoom solution.
+
+What I want:
+- Audit the relevant screens and identify the root cause.
+- Fix the layout using proper responsive design.
+- Use react-native-safe-area-context correctly.
+- Use useWindowDimensions() or equivalent responsive logic.
+- Add tablet breakpoints instead of fixed phone-only dimensions.
+- Ensure buttons, weather cards, bottom panels, and modals respect the device safe area.
+- Ensure the app works on iPhone and iPad without clipped content.
+
+Please inspect and fix:
+- The map/home screen
+- The report hazard review/submit screen
+- Any bottom overlay, bottom sheet, footer CTA, modal, or fixed-position component used by these screens
+
+Technical requirements:
+- Wrap the app/root properly with SafeAreaProvider if missing
+- Use useSafeAreaInsets() where bottom spacing is needed
+- Avoid hardcoded heights/widths like 360, 390, fixed bottom offsets, or fixed full-screen positioning that only works on phones
+- For tablet layouts, center content with a maxWidth and responsive padding
+- If content can exceed screen height, use ScrollView with enough bottom padding for the CTA
+- Do not use transform scale as the solution
+- Keep the current visual design as much as possible
+
+Acceptance criteria:
+1. iPhone home screen:
+- weather card fully visible
+- bottom controls do not get cut off
+- content is above the home indicator
+
+2. iPhone report/review screen:
+- Submit button fully visible and tappable
+- screen scrolls correctly if needed
+- no overlap between content and footer CTA
+
+3. iPad Air:
+- layout looks intentionally designed for tablet
+- cards/panels are sized and positioned correctly
+- modals/screens are not awkwardly stretched or clipped
+- spacing looks balanced in portrait and ideally landscape too
+
+What I need from you:
+1. Find the exact files causing this
+2. Explain the root cause briefly
+3. Implement the code changes
+4. Show me the changed code
+5. Tell me how to test it on iPhone and iPad
+
+Important:
+Please do the actual code fix, not just give advice.
+If there are multiple files involved, update all of them.
+If safe area or modal handling is part of the issue, fix that too.
