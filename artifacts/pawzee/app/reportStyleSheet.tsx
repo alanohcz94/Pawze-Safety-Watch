@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    paddingVertical: 10,
+    paddingVertical: 7,
     borderRadius: 14,
     backgroundColor: Colors.primary,
     marginTop: 5,
