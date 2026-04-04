@@ -1,0 +1,73 @@
+Help me fix 3 bugs in my Pawzee mobile app for both iOS and Android without changing the current product flow.
+
+Context:
+Pawzee is a hazard map app. The core product is already working, but I found 3 issues during mobile testing on both iPhone and Android devices. Please make the fixes cross-platform and make sure behavior is consistent on both iOS and Android.
+
+Bug 1 — Location search is not accurate for exact places
+Current issue:
+When I search for a specific place such as “Punggol station” or “Punggol MRT Station”, the search result is mismatched and returns an unrelated or overly broad location such as “Punggol Rd” instead of the exact MRT / POI / landmark.
+
+Expected behavior on both iOS and Android:
+- Search should support exact POI / landmark / station matching, not just broad road or address matching
+- Queries such as MRT stations, malls, parks, buildings, vet clinics, and landmarks should return the most relevant exact result first
+- Exact phrase matches should rank higher than broad partial matches
+- Selecting a result should move the map to the correct location
+- Do not auto-resolve to a generic road if a better POI result exists
+- Search experience should behave consistently on both iOS and Android
+
+Please review and fix:
+- current search logic
+- result ranking
+- keyword/token matching
+- normalization of search terms
+- exact place matching and fallback behavior
+
+Bug 2 — Hazard marker confirmation badge is cut off
+Current issue:
+The small confirmation count badge above the Poison Bait map marker is visually clipped / cut off on mobile.
+
+Expected behavior on both iOS and Android:
+- The confirmation badge must be fully visible
+- It should display properly for 1-digit and 2-digit numbers
+- It must not be clipped by the marker container, parent wrapper, map overlay, or screen bounds
+- Marker alignment should still look clean on different mobile screen sizes and device types
+- Styling should be visually consistent across iOS and Android
+
+Please review and fix:
+- marker component layout
+- badge positioning
+- overflow / clipping issues
+- z-index / layering if relevant
+- responsive display on mobile
+
+Bug 3 — Tapping hazard category should focus matching pin and allow cycling through same category
+Current issue:
+In the “Active hazard categories” section, when I tap “Poison Bait”, it should move the user to the Poison Bait pin on the map. If there are multiple Poison Bait hazards, tapping again should move to the next matching Poison Bait pin, then the next one again, looping through all matching pins.
+
+Expected behavior on both iOS and Android:
+- Tapping a hazard category row should center/focus the map on the first matching marker
+- The focused marker should be highlighted or opened
+- If multiple hazards exist for the same category, repeated taps should cycle through them one by one
+- After the last matching marker, it should loop back to the first one
+- The interaction should feel smooth and intuitive on both iOS and Android
+- State handling should remain stable and not break current map interactions
+
+Please implement:
+- category-to-marker linking
+- per-category index tracking
+- repeated tap cycling behavior
+- proper map centering/focus on each matching pin
+- stable cross-platform behavior for iOS and Android
+
+Important:
+- Do not break current working features
+- Keep the design and existing user flow the same
+- Keep the changes focused and minimal
+- Treat this as a bug fix and polish pass for both iOS and Android mobile devices
+- After fixing, please explain:
+  1. root cause of each issue
+  2. what files/components were updated
+  3. what was changed
+  4. what edge cases I should test next on both iOS and Android
+
+If needed, you may do a small refactor for maintainability, but do not do a large rewrite.
