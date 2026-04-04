@@ -12,11 +12,11 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import * as Location from "expo-location";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import { createStyles } from "./componentStyleSheet/StyleSheetSearchBar";
 import { useResponsive } from "@/lib/responsive";
+import { fetchPlaceSearch } from "@/lib/api";
 
 export interface SearchResult {
   label: string;
@@ -35,8 +35,8 @@ interface SearchBarProps {
 interface GeoSuggestion {
   id: string;
   label: string;
-  latitude: number;
-  longitude: number;
+  lat: number;
+  lng: number;
 }
 
 export function SearchBar({
@@ -77,29 +77,8 @@ export function SearchBar({
     }
     setLoading(true);
     try {
-      const results = await Location.geocodeAsync(text.trim());
-      const mapped: GeoSuggestion[] = [];
-      for (let i = 0; i < Math.min(results.length, 5); i++) {
-        const r = results[i];
-        let label = `${r.latitude.toFixed(4)}, ${r.longitude.toFixed(4)}`;
-        try {
-          const reverse = await Location.reverseGeocodeAsync({
-            latitude: r.latitude,
-            longitude: r.longitude,
-          });
-          if (reverse.length > 0) {
-            const parts = [reverse[0].name, reverse[0].street, reverse[0].city, reverse[0].region].filter(Boolean);
-            if (parts.length > 0) label = parts.join(", ");
-          }
-        } catch {}
-        mapped.push({
-          id: `${r.latitude}-${r.longitude}-${i}`,
-          label,
-          latitude: r.latitude,
-          longitude: r.longitude,
-        });
-      }
-      setSuggestions(mapped);
+      const results = await fetchPlaceSearch(text.trim());
+      setSuggestions(results);
     } catch {
       setSuggestions([]);
     }
@@ -111,34 +90,38 @@ export function SearchBar({
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       fetchSuggestions(text);
-    }, 500);
+    }, 400);
   };
 
-  const handleSelectSuggestion = (suggestion: GeoSuggestion) => {
-    onSearch({
-      label: suggestion.label,
-      latitude: suggestion.latitude,
-      longitude: suggestion.longitude,
-    });
-    closeOverlay();
-  };
+  const handleSelectSuggestion = useCallback(
+    (suggestion: GeoSuggestion) => {
+      onSearch({
+        label: suggestion.label,
+        latitude: suggestion.lat,
+        longitude: suggestion.lng,
+      });
+      closeOverlay();
+    },
+    [onSearch],
+  );
 
   const handleSubmit = async () => {
     if (!query.trim()) return;
+
+    if (suggestions.length > 0) {
+      handleSelectSuggestion(suggestions[0]);
+      return;
+    }
+
     setLoading(true);
     try {
-      const results = await Location.geocodeAsync(query.trim());
+      const results = await fetchPlaceSearch(query.trim());
       if (results.length > 0) {
-        const { latitude, longitude } = results[0];
-        let label = query.trim();
-        try {
-          const reverse = await Location.reverseGeocodeAsync({ latitude, longitude });
-          if (reverse.length > 0) {
-            const parts = [reverse[0].name, reverse[0].street, reverse[0].city, reverse[0].region].filter(Boolean);
-            if (parts.length > 0) label = parts.join(", ");
-          }
-        } catch {}
-        onSearch({ label, latitude, longitude });
+        onSearch({
+          label: results[0].label,
+          latitude: results[0].lat,
+          longitude: results[0].lng,
+        });
         closeOverlay();
       }
     } catch {}
@@ -221,7 +204,12 @@ export function SearchBar({
                 autoFocus
               />
               {query.length > 0 && (
-                <Pressable onPress={() => { setQuery(""); setSuggestions([]); }}>
+                <Pressable
+                  onPress={() => {
+                    setQuery("");
+                    setSuggestions([]);
+                  }}
+                >
                   <Ionicons name="close-circle" size={18} color={Colors.textTertiary} />
                 </Pressable>
               )}
@@ -246,7 +234,9 @@ export function SearchBar({
                 onPress={() => handleSelectSuggestion(item)}
               >
                 <Ionicons name="location-outline" size={20} color={Colors.primary} />
-                <Text style={styles.suggestionText} numberOfLines={2}>{item.label}</Text>
+                <Text style={styles.suggestionText} numberOfLines={2}>
+                  {item.label}
+                </Text>
               </Pressable>
             )}
             ListEmptyComponent={
@@ -267,4 +257,3 @@ export function SearchBar({
     </>
   );
 }
-

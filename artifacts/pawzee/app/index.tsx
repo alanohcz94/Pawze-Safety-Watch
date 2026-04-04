@@ -221,6 +221,7 @@ export default function MapScreen() {
   const queryClient = useQueryClient();
   const mapRef = useRef<MapView>(null);
   const regionRef = useRef<Region>(DEFAULT_REGION);
+  const categoryIndexRef = useRef<Record<string, number>>({});
   const { alertRadius, stepCounter, notifications } = useSettings();
   const alertRadiusMeters = alertRadius * 1000;
   const notifiedHazardsRef = useRef<Set<string>>(new Set());
@@ -612,6 +613,7 @@ export default function MapScreen() {
       longitudeDelta: 0.02,
     };
 
+    categoryIndexRef.current = {};
     mapRef.current?.animateToRegion(newRegion, 600);
     setSearchLocation(label);
     setSearchedAreaName(label);
@@ -642,6 +644,7 @@ export default function MapScreen() {
       mapRef.current?.animateToRegion(newRegion, 500);
     }
 
+    categoryIndexRef.current = {};
     setSearchLocation("");
     setSearchedAreaName("");
     setQueryCenter(null);
@@ -653,6 +656,34 @@ export default function MapScreen() {
       setShowWeatherDashboard(view !== "breakdown");
     },
     [],
+  );
+
+  const handleCategoryPress = useCallback(
+    (category: string) => {
+      const matching = hazards.filter((h) => h.category === category);
+      if (matching.length === 0) return;
+
+      const current = categoryIndexRef.current[category] ?? 0;
+      const idx = current % matching.length;
+      const hazard = matching[idx];
+
+      categoryIndexRef.current[category] = (idx + 1) % matching.length;
+
+      mapRef.current?.animateToRegion(
+        {
+          latitude: hazard.lat,
+          longitude: hazard.lng,
+          latitudeDelta: 0.003,
+          longitudeDelta: 0.003,
+        },
+        500,
+      );
+
+      setSelectedHazard(hazard);
+      setShowDetail(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    },
+    [hazards],
   );
 
   const showStepCounterChip =
@@ -809,6 +840,7 @@ export default function MapScreen() {
               showingSearchLocation={showingSearchArea}
               onBackToCurrentLocation={handleRecenter}
               onViewChange={handleSafetySummaryViewChange}
+              onCategoryPress={handleCategoryPress}
             />
           </View>
 

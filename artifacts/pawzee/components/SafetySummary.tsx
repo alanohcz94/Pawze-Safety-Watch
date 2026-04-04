@@ -15,6 +15,7 @@ interface SafetySummaryProps {
   showingSearchLocation?: boolean;
   onBackToCurrentLocation?: () => void;
   onViewChange?: (view: SummaryView) => void;
+  onCategoryPress?: (category: string) => void;
 }
 
 type SummaryView = "summary" | "breakdown";
@@ -26,6 +27,7 @@ export function SafetySummaryDashboard({
   showingSearchLocation = false,
   onBackToCurrentLocation,
   onViewChange,
+  onCategoryPress,
 }: SafetySummaryProps) {
   const r = useResponsive();
   const styles = useMemo(() => createStyles(r), [r]);
@@ -152,7 +154,15 @@ export function SafetySummaryDashboard({
                   HAZARD_CONFIGS.other;
 
                 return (
-                  <View key={category} style={styles.breakdownItem}>
+                  <Pressable
+                    key={category}
+                    style={({ pressed }) => [
+                      styles.breakdownItem,
+                      pressed && styles.breakdownItemPressed,
+                    ]}
+                    onPress={() => onCategoryPress?.(category)}
+                    android_ripple={{ color: "rgba(26,158,143,0.12)" }}
+                  >
                     <HazardIcon
                       category={category as HazardCategory}
                       size={24}
@@ -161,7 +171,8 @@ export function SafetySummaryDashboard({
                     <View style={styles.breakdownCountPill}>
                       <Text style={styles.breakdownCount}>{count}</Text>
                     </View>
-                  </View>
+                    <Ionicons name="chevron-forward" size={14} color="rgba(26,158,143,0.7)" />
+                  </Pressable>
                 );
               })}
             </ScrollView>

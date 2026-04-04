@@ -5,6 +5,7 @@ import hazardsRouter from "./hazards";
 import profileRouter from "./profile";
 import uploadsRouter from "./uploads";
 import vetsRouter from "./vets";
+import placesRouter from "./places";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(hazardsRouter);
 router.use(profileRouter);
 router.use(uploadsRouter);
 router.use(vetsRouter);
+router.use(placesRouter);
 
 export default router;

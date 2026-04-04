@@ -279,6 +279,25 @@ export async function deleteProfileAccount(): Promise<void> {
   }
 }
 
+export async function fetchPlaceSearch(
+  query: string,
+): Promise<{ id: string; label: string; lat: number; lng: number }[]> {
+  const base = getApiBaseUrl();
+  const params = new URLSearchParams({ q: query });
+  try {
+    const res = await safeFetch(
+      `${base}/api/places/search?${params}`,
+      {},
+      "Unable to search locations.",
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.results ?? [];
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchNearbyVets(lat: number, lng: number, radius?: number): Promise<VetClinic[]> {
   const base = getApiBaseUrl();
   const params = new URLSearchParams({

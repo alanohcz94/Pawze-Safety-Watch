@@ -137,6 +137,9 @@ export function createStyles(r: ResponsiveUtils) {
       paddingHorizontal: 10,
       minHeight: 44,
     },
+    breakdownItemPressed: {
+      backgroundColor: Colors.primaryLight,
+    },
     breakdownLabel: {
       flex: 1,
       fontSize: r.rf(14),
