@@ -279,22 +279,44 @@ export async function deleteProfileAccount(): Promise<void> {
   }
 }
 
-export async function fetchPlaceSearch(
-  query: string,
-): Promise<{ id: string; label: string; lat: number; lng: number }[]> {
+export async function fetchPlaceAutocomplete(
+  input: string,
+  sessionToken: string,
+): Promise<{ placeId: string; description: string }[]> {
   const base = getApiBaseUrl();
-  const params = new URLSearchParams({ q: query });
+  const params = new URLSearchParams({ input, sessiontoken: sessionToken });
   try {
     const res = await safeFetch(
-      `${base}/api/places/search?${params}`,
+      `${base}/api/places/autocomplete?${params}`,
       {},
       "Unable to search locations.",
     );
     if (!res.ok) return [];
     const data = await res.json();
-    return data.results ?? [];
+    return data.predictions ?? [];
   } catch {
     return [];
+  }
+}
+
+export async function fetchPlaceDetails(
+  placeId: string,
+  sessionToken: string,
+  description?: string,
+): Promise<{ lat: number; lng: number; formattedAddress: string } | null> {
+  const base = getApiBaseUrl();
+  const params = new URLSearchParams({ place_id: placeId, sessiontoken: sessionToken });
+  if (description) params.set("description", description);
+  try {
+    const res = await safeFetch(
+      `${base}/api/places/details?${params}`,
+      {},
+      "Unable to get location details.",
+    );
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
   }
 }
 

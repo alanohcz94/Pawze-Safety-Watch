@@ -340,6 +340,10 @@ export default function MapScreen() {
   }, [hazards, selectedHazard?.id]);
 
   useEffect(() => {
+    categoryIndexRef.current = {};
+  }, [hazards]);
+
+  useEffect(() => {
     (async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();

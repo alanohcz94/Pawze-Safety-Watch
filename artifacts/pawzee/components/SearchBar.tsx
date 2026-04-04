@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import { createStyles } from "./componentStyleSheet/StyleSheetSearchBar";
 import { useResponsive } from "@/lib/responsive";
-import { fetchPlaceSearch } from "@/lib/api";
+import { fetchPlaceAutocomplete, fetchPlaceDetails } from "@/lib/api";
 
 export interface SearchResult {
   label: string;
@@ -33,10 +33,12 @@ interface SearchBarProps {
 }
 
 interface GeoSuggestion {
-  id: string;
+  placeId: string;
   label: string;
-  lat: number;
-  lng: number;
+}
+
+function makeSessionToken(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
 }
 
 export function SearchBar({
@@ -55,8 +57,10 @@ export function SearchBar({
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sessionTokenRef = useRef<string>(makeSessionToken());
 
   const openOverlay = () => {
+    sessionTokenRef.current = makeSessionToken();
     setOverlayVisible(true);
     setQuery("");
     setSuggestions([]);
@@ -77,8 +81,10 @@ export function SearchBar({
     }
     setLoading(true);
     try {
-      const results = await fetchPlaceSearch(text.trim());
-      setSuggestions(results);
+      const predictions = await fetchPlaceAutocomplete(text.trim(), sessionTokenRef.current);
+      setSuggestions(
+        predictions.map((p) => ({ placeId: p.placeId, label: p.description })),
+      );
     } catch {
       setSuggestions([]);
     }
@@ -94,13 +100,26 @@ export function SearchBar({
   };
 
   const handleSelectSuggestion = useCallback(
-    (suggestion: GeoSuggestion) => {
-      onSearch({
-        label: suggestion.label,
-        latitude: suggestion.lat,
-        longitude: suggestion.lng,
-      });
-      closeOverlay();
+    async (suggestion: GeoSuggestion) => {
+      setLoading(true);
+      try {
+        const details = await fetchPlaceDetails(
+          suggestion.placeId,
+          sessionTokenRef.current,
+          suggestion.label,
+        );
+        if (details) {
+          onSearch({
+            label: suggestion.label,
+            latitude: details.lat,
+            longitude: details.lng,
+          });
+          closeOverlay();
+        }
+      } catch {
+        // ignore — user can retry
+      }
+      setLoading(false);
     },
     [onSearch],
   );
@@ -109,20 +128,30 @@ export function SearchBar({
     if (!query.trim()) return;
 
     if (suggestions.length > 0) {
-      handleSelectSuggestion(suggestions[0]);
+      await handleSelectSuggestion(suggestions[0]);
       return;
     }
 
     setLoading(true);
     try {
-      const results = await fetchPlaceSearch(query.trim());
-      if (results.length > 0) {
-        onSearch({
-          label: results[0].label,
-          latitude: results[0].lat,
-          longitude: results[0].lng,
-        });
-        closeOverlay();
+      const predictions = await fetchPlaceAutocomplete(
+        query.trim(),
+        sessionTokenRef.current,
+      );
+      if (predictions.length > 0) {
+        const details = await fetchPlaceDetails(
+          predictions[0].placeId,
+          sessionTokenRef.current,
+          predictions[0].description,
+        );
+        if (details) {
+          onSearch({
+            label: predictions[0].description,
+            latitude: details.lat,
+            longitude: details.lng,
+          });
+          closeOverlay();
+        }
       }
     } catch {}
     setLoading(false);
@@ -225,7 +254,7 @@ export function SearchBar({
 
           <FlatList
             data={suggestions}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.placeId}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.suggestionsList}
             renderItem={({ item }) => (
