@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { View, Text } from "react-native";
 import { Marker } from "react-native-maps";
 import { HazardIcon } from "./HazardIcon";
@@ -15,12 +15,18 @@ interface HazardMarkerProps {
 export function HazardMarker({ hazard, onPress }: HazardMarkerProps) {
   const r = useResponsive();
   const styles = useMemo(() => createStyles(r), [r]);
+  const [tracksViewChanges, setTracksViewChanges] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setTracksViewChanges(false), 400);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <Marker
       coordinate={{ latitude: hazard.lat, longitude: hazard.lng }}
       onPress={() => onPress(hazard)}
-      tracksViewChanges={false}
+      tracksViewChanges={tracksViewChanges}
     >
       <View style={styles.markerContainer}>
         <HazardIcon category={hazard.category as HazardCategory} size={r.rs(36)} />
@@ -43,9 +49,15 @@ interface ClusterMarkerProps {
 export function ClusterMarker({ count, coordinate, onPress }: ClusterMarkerProps) {
   const r = useResponsive();
   const styles = useMemo(() => createStyles(r), [r]);
+  const [tracksViewChanges, setTracksViewChanges] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setTracksViewChanges(false), 400);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
-    <Marker coordinate={coordinate} onPress={onPress} tracksViewChanges={false}>
+    <Marker coordinate={coordinate} onPress={onPress} tracksViewChanges={tracksViewChanges}>
       <View style={styles.clusterContainer}>
         <View style={styles.clusterInner}>
           <Text style={styles.clusterText}>{count}</Text>
