@@ -1,4 +1,4 @@
-import { Router, type IRouter, type Request, type Response } from "express";
+import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -43,17 +43,20 @@ const audioUpload = multer({
   },
 });
 
+function requireAuth(req: Request, res: Response, next: NextFunction): void {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+  next();
+}
+
 router.post(
   "/transcribe",
+  requireAuth,
   audioUpload.single("audio"),
   async (req: Request, res: Response) => {
     const filePath = req.file?.path;
-
-    if (!req.isAuthenticated()) {
-      if (filePath) fs.unlink(filePath, () => {});
-      res.status(401).json({ error: "Authentication required" });
-      return;
-    }
 
     if (!filePath) {
       res.status(400).json({ error: "No audio file uploaded" });
