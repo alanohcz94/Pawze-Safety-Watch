@@ -44,7 +44,6 @@ import { ProfileMenu } from "@/components/ProfileMenu";
 import { EmergencyVetSheet } from "@/components/EmergencyVetSheet";
 import { SafetySummaryDashboard } from "@/components/SafetySummary";
 import { WeatherReportBar } from "@/components/WeatherReportBar";
-import { HazardFilterChips } from "@/components/HazardFilterChips";
 import { useSettings } from "@/lib/settings";
 import {
   fetchAreaWeather,
@@ -840,6 +839,8 @@ export default function MapScreen() {
               displayText={searchLocation}
               onRecenter={handleRecenter}
               recenterDisabled={!userLocation}
+              activeFilter={activeFilter}
+              onFilterChange={setActiveFilter}
             />
           </View>
 
@@ -847,13 +848,6 @@ export default function MapScreen() {
           <Pressable style={styles.reportBtn} onPress={handleReportPress}>
             <Ionicons name="warning" size={r.rs(22)} color={Colors.warning} />
           </Pressable>
-        </View>
-
-        <View style={styles.filterChipsWrapper}>
-          <HazardFilterChips
-            activeCategory={activeFilter}
-            onSelect={setActiveFilter}
-          />
         </View>
 
         <ScrollView
