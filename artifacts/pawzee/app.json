@@ -23,6 +23,7 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Pawzee uses your location to alert you about nearby hazards while walking.",
         "NSCameraUsageDescription": "Pawzee uses the camera to photograph hazards when reporting them.",
         "NSPhotoLibraryUsageDescription": "Pawzee accesses your photo library to attach photos when reporting hazards.",
+        "NSMicrophoneUsageDescription": "Pawzee uses the microphone to let you describe hazards by speaking.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -31,7 +32,8 @@
         "ACTIVITY_RECOGNITION",
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
-        "CAMERA"
+        "CAMERA",
+        "RECORD_AUDIO"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
@@ -45,6 +47,7 @@
       "expo-router",
       "expo-font",
       "expo-web-browser",
+      "expo-av",
       [
         "expo-notifications",
         {

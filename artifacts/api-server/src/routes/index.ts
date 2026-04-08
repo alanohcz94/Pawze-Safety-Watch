@@ -6,6 +6,7 @@ import profileRouter from "./profile";
 import uploadsRouter from "./uploads";
 import vetsRouter from "./vets";
 import placesRouter from "./places";
+import transcribeRouter from "./transcribe";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(profileRouter);
 router.use(uploadsRouter);
 router.use(vetsRouter);
 router.use(placesRouter);
+router.use(transcribeRouter);
 
 export default router;

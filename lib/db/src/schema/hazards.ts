@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { doublePrecision, integer, pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
+import { doublePrecision, integer, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 import { usersTable } from "./auth";
 
 export const hazardsTable = pgTable("hazards", {
@@ -8,6 +8,7 @@ export const hazardsTable = pgTable("hazards", {
   lat: doublePrecision("lat").notNull(),
   lng: doublePrecision("lng").notNull(),
   photoUrl: varchar("photo_url"),
+  notes: text("notes"),
   reportedBy: varchar("reported_by").notNull().references(() => usersTable.id),
   reportedAt: timestamp("reported_at", { withTimezone: true }).notNull().defaultNow(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),

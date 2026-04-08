@@ -20,6 +20,7 @@ import { createStyles } from "./reportStyleSheet";
 import { useResponsive } from "@/lib/responsive";
 import Colors from "@/constants/colors";
 import { HazardIcon } from "@/components/HazardIcon";
+import { VoiceReportInput } from "@/components/VoiceReportInput";
 import {
   HAZARD_CATEGORIES,
   HAZARD_CONFIGS,
@@ -38,6 +39,7 @@ export default function ReportScreen() {
   const [selectedCategory, setSelectedCategory] =
     useState<HazardCategory | null>(null);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const handleCategorySelect = (category: HazardCategory) => {
@@ -100,6 +102,7 @@ export default function ReportScreen() {
         lat: loc.coords.latitude,
         lng: loc.coords.longitude,
         photoUrl: uploadedPhotoUrl,
+        notes: notes.trim() || null,
       });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -302,6 +305,12 @@ export default function ReportScreen() {
                 </Text>
               </View>
             </View>
+
+            <VoiceReportInput
+              value={notes}
+              onChangeText={setNotes}
+              disabled={submitting}
+            />
           </View>
 
           <Pressable
