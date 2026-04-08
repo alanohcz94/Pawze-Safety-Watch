@@ -455,6 +455,9 @@ components:
           type: number
         photoUrl:
           type: [string, 'null']
+        notes:
+          type: [string, 'null']
+          description: Optional voice transcript or typed note attached to the hazard report.
         reportedBy:
           type: string
         reportedByName:
@@ -487,6 +490,9 @@ components:
           type: number
         photoUrl:
           type: [string, 'null']
+        notes:
+          type: [string, 'null']
+          description: Optional voice transcript or typed note describing the hazard.
     ConfirmHazardRequest:
       type: object
       required: [lat, lng]

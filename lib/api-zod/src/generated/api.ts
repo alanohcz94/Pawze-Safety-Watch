@@ -117,6 +117,12 @@ export const ListHazardsResponse = zod.object({
       lat: zod.number(),
       lng: zod.number(),
       photoUrl: zod.string().nullish(),
+      notes: zod
+        .string()
+        .nullish()
+        .describe(
+          "Optional voice transcript or typed note attached to the hazard report.",
+        ),
       reportedBy: zod.string(),
       reportedByName: zod.string().nullish(),
       reportedAt: zod.date(),
@@ -150,6 +156,10 @@ export const CreateHazardBody = zod.object({
   lat: zod.number(),
   lng: zod.number(),
   photoUrl: zod.string().nullish(),
+  notes: zod
+    .string()
+    .nullish()
+    .describe("Optional voice transcript or typed note describing the hazard."),
 });
 
 /**
@@ -166,6 +176,7 @@ export const ConfirmHazardHeader = zod.object({
 export const ConfirmHazardBody = zod.object({
   lat: zod.number(),
   lng: zod.number(),
+  photoUrl: zod.string().nullish(),
 });
 
 export const ConfirmHazardResponse = zod.object({
@@ -186,6 +197,12 @@ export const ConfirmHazardResponse = zod.object({
   lat: zod.number(),
   lng: zod.number(),
   photoUrl: zod.string().nullish(),
+  notes: zod
+    .string()
+    .nullish()
+    .describe(
+      "Optional voice transcript or typed note attached to the hazard report.",
+    ),
   reportedBy: zod.string(),
   reportedByName: zod.string().nullish(),
   reportedAt: zod.date(),

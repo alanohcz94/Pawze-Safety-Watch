@@ -17,12 +17,20 @@ import { transcribeAudio } from "@/lib/api";
 interface VoiceReportInputProps {
   value: string;
   onChangeText: (text: string) => void;
+  onTranscript?: (text: string) => void;
+  onError?: () => void;
   disabled?: boolean;
 }
 
 type RecordingState = "idle" | "recording" | "transcribing" | "done" | "error";
 
-export function VoiceReportInput({ value, onChangeText, disabled }: VoiceReportInputProps) {
+export function VoiceReportInput({
+  value,
+  onChangeText,
+  onTranscript,
+  onError,
+  disabled,
+}: VoiceReportInputProps) {
   const [recordingState, setRecordingState] = useState<RecordingState>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const recordingRef = useRef<Audio.Recording | null>(null);
@@ -85,10 +93,12 @@ export function VoiceReportInput({ value, onChangeText, disabled }: VoiceReportI
 
       const text = await transcribeAudio(uri, mimeType);
       onChangeText(text);
+      onTranscript?.(text);
       setRecordingState("done");
     } catch (err: any) {
       setErrorMsg(err.message || "Transcription failed. You can type your notes instead.");
       setRecordingState("error");
+      onError?.();
     }
   };
 

@@ -169,7 +169,7 @@ router.post("/hazards", async (req: Request, res: Response) => {
     return;
   }
 
-  const { category, lat, lng, photoUrl, notes } = req.body as CreateHazardRequest & { notes?: string | null };
+  const { category, lat, lng, photoUrl, notes } = req.body as CreateHazardRequest;
   if (!category || typeof lat !== "number" || typeof lng !== "number") {
     res.status(400).json({ error: "Invalid request body: category, lat, lng required" });
     return;

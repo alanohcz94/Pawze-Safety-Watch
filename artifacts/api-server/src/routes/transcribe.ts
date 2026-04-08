@@ -1,11 +1,16 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import multer from "multer";
-import fs from "fs";
 import path from "path";
+import fs from "fs";
 import crypto from "crypto";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import OpenAI from "openai";
 
 const router: IRouter = Router();
+
+const openai = new OpenAI({
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? "dummy",
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+});
 
 const AUDIO_DIR = path.join(process.cwd(), "uploads", "audio");
 
@@ -27,21 +32,13 @@ const audioUpload = multer({
   storage: audioStorage,
   limits: { fileSize: 25 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    const allowed = [
-      "audio/m4a",
-      "audio/mp4",
-      "audio/x-m4a",
-      "audio/mpeg",
-      "audio/wav",
-      "audio/webm",
-      "audio/ogg",
-      "audio/aac",
-      "application/octet-stream",
-    ];
-    if (allowed.includes(file.mimetype)) {
+    if (
+      file.mimetype.startsWith("audio/") ||
+      file.mimetype === "application/octet-stream"
+    ) {
       cb(null, true);
     } else {
-      cb(new Error(`Unsupported audio type: ${file.mimetype}`));
+      cb(new Error(`Unsupported file type: ${file.mimetype}`));
     }
   },
 });
