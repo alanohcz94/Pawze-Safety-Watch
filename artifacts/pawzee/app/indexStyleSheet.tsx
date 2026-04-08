@@ -102,6 +102,9 @@ export function createStyles(r: ResponsiveUtils) {
     bottomDashboardScroll: {
       flexGrow: 0,
     },
+    filterChipsWrapper: {
+      marginHorizontal: -r.rs(16),
+    },
     bottomControlRow: {
       flexDirection: "row",
       alignItems: "center",

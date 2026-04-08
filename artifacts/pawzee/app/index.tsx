@@ -44,6 +44,7 @@ import { ProfileMenu } from "@/components/ProfileMenu";
 import { EmergencyVetSheet } from "@/components/EmergencyVetSheet";
 import { SafetySummaryDashboard } from "@/components/SafetySummary";
 import { WeatherReportBar } from "@/components/WeatherReportBar";
+import { HazardFilterChips } from "@/components/HazardFilterChips";
 import { useSettings } from "@/lib/settings";
 import {
   fetchAreaWeather,
@@ -262,6 +263,7 @@ export default function MapScreen() {
     lat: number;
     lng: number;
   } | null>(null);
+  const [activeFilter, setActiveFilter] = useState<HazardCategory | null>(null);
 
   const currentAreaLat = userLocation?.lat ?? DEFAULT_REGION.latitude;
   const currentAreaLng = userLocation?.lng ?? DEFAULT_REGION.longitude;
@@ -275,6 +277,13 @@ export default function MapScreen() {
     queryFn: () => fetchHazards(centerLat, centerLng, alertRadiusMeters),
     refetchInterval: 30000,
   });
+  const filteredHazards = useMemo(
+    () =>
+      activeFilter
+        ? hazards.filter((h) => h.category === activeFilter)
+        : hazards,
+    [hazards, activeFilter],
+  );
   const { data: currentAreaSummary = null, isLoading: loadingCurrentAreaSummary } =
     useQuery({
       queryKey: queryKeys.hazardSummary.detail(
@@ -620,6 +629,7 @@ export default function MapScreen() {
     };
 
     categoryIndexRef.current = {};
+    setActiveFilter(null);
     mapRef.current?.animateToRegion(newRegion, 600);
     setSearchLocation(label);
     setSearchedAreaName(label);
@@ -651,6 +661,7 @@ export default function MapScreen() {
     }
 
     categoryIndexRef.current = {};
+    setActiveFilter(null);
     setSearchLocation("");
     setSearchedAreaName("");
     setQueryCenter(null);
@@ -746,7 +757,7 @@ export default function MapScreen() {
       {/* Map content area (flex:1, relative) */}
       <View style={styles.mapContent}>
       <HazardMap
-        hazards={hazards}
+        hazards={filteredHazards}
         initialRegion={initialRegion}
         mapPaddingBottom={Math.max(insets.bottom, 14) + r.rs(330)}
         mapPaddingTop={insets.top + r.rs(72)}
@@ -836,6 +847,13 @@ export default function MapScreen() {
           <Pressable style={styles.reportBtn} onPress={handleReportPress}>
             <Ionicons name="warning" size={r.rs(22)} color={Colors.warning} />
           </Pressable>
+        </View>
+
+        <View style={styles.filterChipsWrapper}>
+          <HazardFilterChips
+            activeCategory={activeFilter}
+            onSelect={setActiveFilter}
+          />
         </View>
 
         <ScrollView
