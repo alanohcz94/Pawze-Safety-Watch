@@ -4,16 +4,64 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import Colors from "@/constants/colors";
 import { HAZARD_CATEGORIES, HAZARD_CONFIGS, type HazardCategory } from "@/lib/hazards";
-import { HazardIcon } from "@/components/HazardIcon";
 import { useResponsive, type ResponsiveUtils } from "@/lib/responsive";
 
 interface HazardFilterChipsProps {
   activeCategory: HazardCategory | null;
   onSelect: (category: HazardCategory | null) => void;
+}
+
+type MCIName = React.ComponentProps<typeof MaterialCommunityIcons>["name"];
+type IonName = React.ComponentProps<typeof Ionicons>["name"];
+type MIName = React.ComponentProps<typeof MaterialIcons>["name"];
+
+function CategoryIcon({
+  category,
+  size,
+  isActive,
+}: {
+  category: HazardCategory;
+  size: number;
+  isActive: boolean;
+}) {
+  const config = HAZARD_CONFIGS[category];
+  const iconColor = isActive ? "#FFF" : config.color;
+  const bgColor = isActive ? "rgba(255,255,255,0.2)" : config.bgColor;
+  const iconSize = size * 0.6;
+
+  const icon = (() => {
+    const props = { size: iconSize, color: iconColor };
+    switch (config.iconFamily) {
+      case "MaterialCommunityIcons":
+        return <MaterialCommunityIcons name={config.iconName as MCIName} {...props} />;
+      case "Ionicons":
+        return <Ionicons name={config.iconName as IonName} {...props} />;
+      case "MaterialIcons":
+        return <MaterialIcons name={config.iconName as MIName} {...props} />;
+      default:
+        return <MaterialIcons name="warning" {...props} />;
+    }
+  })();
+
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: bgColor,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {icon}
+    </View>
+  );
 }
 
 export function HazardFilterChips({
@@ -58,7 +106,7 @@ export function HazardFilterChips({
             style={[styles.chip, isActive && styles.chipActive]}
             onPress={() => onSelect(isActive ? null : cat)}
           >
-            <HazardIcon category={cat} size={r.rs(18)} />
+            <CategoryIcon category={cat} size={r.rs(18)} isActive={isActive} />
             <Text
               style={[styles.chipText, isActive && styles.chipTextActive]}
               numberOfLines={1}
