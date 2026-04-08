@@ -214,6 +214,8 @@ const HazardMap = React.memo(function HazardMap({
   );
 });
 
+const NEARBY_SUMMARY_RADIUS_METERS = 200;
+
 export default function MapScreen() {
   const r = useResponsive();
   const styles = useMemo(() => createStyles(r), [r]);
@@ -224,7 +226,6 @@ export default function MapScreen() {
   const categoryIndexRef = useRef<Record<string, number>>({});
   const { alertRadius, stepCounter, notifications } = useSettings();
   const alertRadiusMeters = alertRadius * 1000;
-  const NEARBY_SUMMARY_RADIUS_METERS = 200;
   const notifiedHazardsRef = useRef<Set<string>>(new Set());
 
   const [initialRegion, setInitialRegion] = useState<Region>(DEFAULT_REGION);
@@ -665,7 +666,14 @@ export default function MapScreen() {
 
   const handleCategoryPress = useCallback(
     (category: string) => {
-      const matching = hazards.filter((h) => h.category === category);
+      const activeLat = queryCenter?.lat ?? currentAreaLat;
+      const activeLng = queryCenter?.lng ?? currentAreaLng;
+      const matching = hazards.filter(
+        (h) =>
+          h.category === category &&
+          haversineDistance(activeLat, activeLng, h.lat, h.lng) <=
+            NEARBY_SUMMARY_RADIUS_METERS,
+      );
       if (matching.length === 0) return;
 
       const current = categoryIndexRef.current[category] ?? 0;
@@ -688,7 +696,7 @@ export default function MapScreen() {
       setShowDetail(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     },
-    [hazards],
+    [hazards, queryCenter, currentAreaLat, currentAreaLng],
   );
 
   const showStepCounterChip =
