@@ -224,6 +224,7 @@ export default function MapScreen() {
   const categoryIndexRef = useRef<Record<string, number>>({});
   const { alertRadius, stepCounter, notifications } = useSettings();
   const alertRadiusMeters = alertRadius * 1000;
+  const NEARBY_SUMMARY_RADIUS_METERS = 200;
   const notifiedHazardsRef = useRef<Set<string>>(new Set());
 
   const [initialRegion, setInitialRegion] = useState<Region>(DEFAULT_REGION);
@@ -278,10 +279,10 @@ export default function MapScreen() {
       queryKey: queryKeys.hazardSummary.detail(
         currentAreaLat,
         currentAreaLng,
-        alertRadiusMeters,
+        NEARBY_SUMMARY_RADIUS_METERS,
       ),
       queryFn: () =>
-        fetchHazardSummary(currentAreaLat, currentAreaLng, alertRadiusMeters),
+        fetchHazardSummary(currentAreaLat, currentAreaLng, NEARBY_SUMMARY_RADIUS_METERS),
       enabled: locationReady,
     });
   const {
@@ -291,10 +292,10 @@ export default function MapScreen() {
     queryKey: queryKeys.hazardSummary.detail(
       searchedAreaLat,
       searchedAreaLng,
-      alertRadiusMeters,
+      NEARBY_SUMMARY_RADIUS_METERS,
     ),
     queryFn: () =>
-      fetchHazardSummary(searchedAreaLat, searchedAreaLng, alertRadiusMeters),
+      fetchHazardSummary(searchedAreaLat, searchedAreaLng, NEARBY_SUMMARY_RADIUS_METERS),
     enabled: !!queryCenter,
   });
   const { data: currentAreaWeather = null, isLoading: loadingCurrentAreaWeather } =
