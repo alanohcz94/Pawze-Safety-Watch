@@ -1,0 +1,160 @@
+I need you to update the Pawzee mobile app in 2 related areas: search UX and voice hazard reporting.
+
+Please inspect the current codebase first, identify the relevant files/components/services, briefly explain your implementation plan, and then make only targeted changes. Avoid unrelated refactors and preserve current styling unless needed for these features.
+
+========================================
+FEATURE 1 — MOVE SEARCH FILTERS INTO SEARCH EXPERIENCE
+========================================
+
+Current issue:
+Hazard filter chips are currently visible under the main map search bar on the default home/map screen. This makes the screen feel crowded.
+
+Goal:
+Keep the main map screen cleaner. Show hazard filters only when the user is actively using search.
+
+Requirements:
+1. Remove always-visible hazard filter chips from the default map/home screen.
+2. Keep the main search bar visible on the map screen as it is now.
+3. When the user taps the search bar, open the search experience (bottom sheet, modal, expanded search state, or screen — follow the current app architecture).
+4. Inside that search experience, show:
+   - search input
+   - common hazard filters
+   - search results
+5. Hazard filters should be lightweight quick filters, not a heavy advanced filter modal.
+6. Use these hazard filters:
+   - All
+   - Broken Glass
+   - Poison Bait
+   - Aggressive Dog
+   - Flooding
+   - Construction
+   - Spray Activity
+   - Stray Animals
+   - Other
+7. Default selected filter should be "All".
+8. Selecting a filter should update the visible search results accordingly.
+9. Reuse existing hazard type definitions and styling where possible.
+10. Do not change unrelated map controls.
+
+Preferred UX:
+- Home/map screen stays clean
+- Filters appear only after tapping into search
+- Search feels focused and uncluttered
+
+Acceptance criteria:
+- Hazard filter chips are no longer always visible on the default map screen
+- Tapping the search bar opens the search experience
+- Hazard filters appear inside the search experience
+- Search results update correctly when a filter is selected
+- Styling remains consistent with Pawzee
+- No unrelated regressions
+
+========================================
+FEATURE 2 — IMPROVE VOICE HAZARD REPORTING WITH AI-ASSISTED STRUCTURED DRAFT
+========================================
+
+Current direction:
+There is already a plan for:
+- Hold to speak
+- Release to stop recording
+- Transcribe speech
+- User explicitly taps Submit
+- Transcript can be stored as notes
+- Errors show inline
+- Notes appear in HazardDetailSheet when present
+
+New goal:
+Do not make raw transcript the main review experience.
+Instead, after transcription, convert the spoken input into a cleaner structured report draft so the user can confirm it quickly.
+
+Desired workflow:
+1. On Step 2 of the report screen, always show a "Hold to speak" mic button.
+   - The audioReport setting does not need to gate the UI.
+2. Holding the button starts recording.
+3. Releasing the button stops recording and triggers transcription.
+4. Show a spinner/loading state while processing, such as:
+   - "Transcribing..."
+   - or "Analyzing report..."
+5. After transcription, use AI or structured parsing to turn the speech into a cleaner report draft.
+
+The app should try to extract:
+- hazard type suggestion
+- cleaned notes / landmark clues / short contextual summary
+
+Example:
+User says:
+"Poison here close to the river with a green log and benches"
+
+System draft:
+- Hazard type: Poison Bait
+- Notes: Near river, green log, benches
+
+Important:
+- Do NOT auto-submit
+- The user must always explicitly confirm by tapping Submit
+- Keep manual reporting available
+
+UI behavior:
+1. After processing, show a compact confirmation UI instead of only a raw transcript text block.
+2. Show:
+   - detected or suggested hazard type
+   - cleaned notes
+3. Let the user:
+   - Submit
+   - Edit notes
+   - Change hazard type
+   - optionally view raw transcript if useful
+4. If parsing confidence is low, do not silently decide the hazard type.
+   Instead, show a suggested hazard type and let the user confirm or change it.
+
+Error handling:
+- If mic permission is denied, show a clear inline error
+- If no speech is detected, show a clear inline error
+- If transcription fails, show a clear inline error and let the user type notes manually or continue without notes
+- Disable the voice button during submission
+- Do not break existing manual flow
+
+Data/storage expectations:
+1. Submitted hazard should include the final confirmed notes field
+2. Notes should continue to be stored in the database
+3. Notes should continue to display in HazardDetailSheet when present
+4. If practical, also retain raw transcript internally for future reference/debugging, but raw transcript should not be the primary user-facing review experience
+
+Implementation guidance:
+- Keep this first version simple and reliable
+- Prefer a structured draft confirmation flow over a fully automatic AI workflow
+- If true AI classification is not yet available, implement a safe parsing layer or clean draft generation structure that can be upgraded later
+- Structure the code so hazard type suggestion and cleaned notes extraction can be improved later without major rewrites
+
+Acceptance criteria:
+- "Hold to speak" mic button is visible on Step 2 of the report screen
+- Holding starts recording; releasing stops recording and triggers transcription
+- Spinner/loading state appears while processing
+- The result is shown as a structured draft first, not just raw transcript
+- User can review/edit notes and change hazard type
+- User must explicitly tap Submit
+- Submitted hazard stores the confirmed notes
+- Notes appear in HazardDetailSheet when present
+- Errors are shown clearly and manual entry still works
+- No unrelated regressions
+
+========================================
+GENERAL CONSTRAINTS
+========================================
+
+Before coding:
+- inspect the current search flow and report flow
+- identify relevant files
+- explain the safest implementation approach briefly
+
+While coding:
+- make only targeted changes
+- preserve current design language
+- avoid unrelated refactors
+- keep performance reasonable
+- tell me exactly which files you changed
+
+After coding:
+- summarize what changed
+- call out any assumptions
+- mention any follow-up improvements you recommend for phase 2
