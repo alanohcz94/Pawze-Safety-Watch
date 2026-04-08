@@ -50,6 +50,7 @@ export function EmergencyVetSheet({
   const [loading, setLoading] = useState(false);
   const [vets, setVets] = useState<VetClinic[]>([]);
   const [searchDone, setSearchDone] = useState(false);
+  const [emergencyOnly, setEmergencyOnly] = useState(false);
 
   useEffect(() => {
     if (visible && !searchDone) {
@@ -89,6 +90,11 @@ export function EmergencyVetSheet({
     setSearchDone(true);
   };
 
+  const handleClose = () => {
+    setEmergencyOnly(false);
+    onClose();
+  };
+
   const handleCall = (phone: string) => {
     const cleaned = phone.replace(/[^\d+]/g, "");
     Linking.openURL(`tel:${cleaned}`);
@@ -105,6 +111,8 @@ export function EmergencyVetSheet({
     const url = `https://www.google.com/maps/search/emergency+vet/@${lat},${lng},14z`;
     Linking.openURL(url);
   };
+
+  const displayedVets = emergencyOnly ? vets.filter((v) => v.emergency) : vets;
 
   const renderVet = ({ item }: { item: VetClinic }) => (
     <View style={styles.vetCard}>
@@ -168,10 +176,10 @@ export function EmergencyVetSheet({
       visible={visible}
       animationType="slide"
       transparent
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={onClose} />
+        <Pressable style={styles.backdrop} onPress={handleClose} />
         <View style={styles.sheet}>
           <View style={styles.grabber} />
           <View style={styles.sheetHeader}>
@@ -183,7 +191,7 @@ export function EmergencyVetSheet({
               />
             </View>
             <Text style={styles.sheetTitle}>Emergency Vet</Text>
-            <Pressable onPress={onClose} style={styles.closeBtn}>
+            <Pressable onPress={handleClose} style={styles.closeBtn}>
               <Ionicons name="close" size={22} color={Colors.textSecondary} />
             </Pressable>
           </View>
@@ -192,14 +200,38 @@ export function EmergencyVetSheet({
             Nearest veterinary clinics from OpenStreetMap
           </Text>
 
+          <View style={styles.filterRow}>
+            <Pressable
+              style={[
+                styles.filterChip,
+                emergencyOnly && styles.filterChipActive,
+              ]}
+              onPress={() => setEmergencyOnly((prev) => !prev)}
+            >
+              <Ionicons
+                name="time-outline"
+                size={14}
+                color={emergencyOnly ? "#FFF" : Colors.primary}
+              />
+              <Text
+                style={[
+                  styles.filterChipText,
+                  emergencyOnly && styles.filterChipTextActive,
+                ]}
+              >
+                24hr / Emergency Only
+              </Text>
+            </Pressable>
+          </View>
+
           {loading ? (
             <View style={styles.loaderContainer}>
               <ActivityIndicator size="large" color={Colors.primary} />
               <Text style={styles.loaderText}>Searching nearby clinics...</Text>
             </View>
-          ) : vets.length > 0 ? (
+          ) : displayedVets.length > 0 ? (
             <FlatList
-              data={vets}
+              data={displayedVets}
               keyExtractor={(item) => item.id}
               renderItem={renderVet}
               contentContainerStyle={styles.listContent}
@@ -225,7 +257,11 @@ export function EmergencyVetSheet({
                 size={48}
                 color={Colors.textTertiary}
               />
-              <Text style={styles.emptyText}>No clinics found nearby</Text>
+              <Text style={styles.emptyText}>
+                {emergencyOnly
+                  ? "No 24hr emergency clinics found nearby"
+                  : "No clinics found nearby"}
+              </Text>
               <Text style={styles.emptySubtext}>
                 Try searching in your Maps app instead
               </Text>
