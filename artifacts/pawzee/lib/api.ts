@@ -29,7 +29,6 @@ export interface HazardItem {
   lat: number;
   lng: number;
   photoUrl: string | null;
-  notes: string | null;
   reportedBy: string;
   reportedByName: string | null;
   reportedAt: string;
@@ -75,13 +74,11 @@ async function safeFetch(
   }
 }
 
-function normalizeHazardItem(hazard: Omit<HazardItem, "userHasConfirmed" | "notes"> & {
+function normalizeHazardItem(hazard: Omit<HazardItem, "userHasConfirmed"> & {
   userHasConfirmed?: boolean;
-  notes?: string | null;
 }): HazardItem {
   return {
     userHasConfirmed: false,
-    notes: null,
     ...hazard,
   };
 }
@@ -108,7 +105,6 @@ export async function createHazard(body: {
   lat: number;
   lng: number;
   photoUrl?: string | null;
-  notes?: string | null;
 }): Promise<HazardItem> {
   const base = getApiBaseUrl();
   const res = await safeFetch(
@@ -129,33 +125,6 @@ export async function createHazard(body: {
   }
   const data = await res.json();
   return normalizeHazardItem(data);
-}
-
-export async function transcribeAudio(uri: string, mimeType: string): Promise<string> {
-  const base = getApiBaseUrl();
-  const ext = uri.split(".").pop() || "m4a";
-  const formData = new FormData();
-  formData.append("audio", {
-    uri,
-    name: `recording.${ext}`,
-    type: mimeType || "audio/m4a",
-  } as unknown as Blob);
-
-  const res = await safeFetch(
-    `${base}/api/transcribe`,
-    {
-      method: "POST",
-      headers: await getAuthHeaders(),
-      body: formData,
-    },
-    "Unable to transcribe audio. Please check your connection.",
-  );
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: "Transcription failed" }));
-    throw new Error(err.error || "Transcription failed");
-  }
-  const data = await res.json();
-  return data.text as string;
 }
 
 export async function confirmHazard(id: string, lat: number, lng: number): Promise<HazardItem> {

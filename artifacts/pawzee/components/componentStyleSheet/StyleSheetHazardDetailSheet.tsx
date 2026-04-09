@@ -199,23 +199,6 @@ export function createStyles(r: ResponsiveUtils) {
       color: Colors.textTertiary,
       marginTop: 4,
     },
-    notesCard: {
-      flexDirection: "row",
-      alignItems: "flex-start",
-      gap: 10,
-      backgroundColor: Colors.surfaceSecondary,
-      borderRadius: 12,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-      marginBottom: 16,
-    },
-    notesText: {
-      flex: 1,
-      fontSize: r.rf(13),
-      fontFamily: "Inter_400Regular",
-      color: Colors.text,
-      lineHeight: r.rf(13) * 1.5,
-    },
     fullPhotoContainer: {
       flex: 1,
       backgroundColor: "#000",

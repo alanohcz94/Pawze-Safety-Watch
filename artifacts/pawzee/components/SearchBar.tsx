@@ -17,8 +17,6 @@ import Colors from "@/constants/colors";
 import { createStyles } from "./componentStyleSheet/StyleSheetSearchBar";
 import { useResponsive } from "@/lib/responsive";
 import { fetchPlaceAutocomplete, fetchPlaceDetails } from "@/lib/api";
-import { HazardFilterChips } from "@/components/HazardFilterChips";
-import type { HazardCategory } from "@/lib/hazards";
 
 export interface SearchResult {
   label: string;
@@ -32,8 +30,6 @@ interface SearchBarProps {
   displayText?: string;
   onRecenter?: () => void;
   recenterDisabled?: boolean;
-  activeFilter?: HazardCategory | null;
-  onFilterChange?: (category: HazardCategory | null) => void;
 }
 
 interface GeoSuggestion {
@@ -51,8 +47,6 @@ export function SearchBar({
   displayText = "",
   onRecenter,
   recenterDisabled = false,
-  activeFilter,
-  onFilterChange,
 }: SearchBarProps) {
   const r = useResponsive();
   const styles = useMemo(() => createStyles(r), [r]);
@@ -250,13 +244,6 @@ export function SearchBar({
               )}
             </View>
           </View>
-
-          {onFilterChange && (
-            <HazardFilterChips
-              activeCategory={activeFilter ?? null}
-              onSelect={onFilterChange}
-            />
-          )}
 
           {loading && (
             <View style={styles.loadingRow}>

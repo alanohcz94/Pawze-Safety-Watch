@@ -14,11 +14,6 @@ export interface HazardItem {
   lng: number;
   /** @nullable */
   photoUrl?: string | null;
-  /**
-   * Optional voice transcript or typed note attached to the hazard report.
-   * @nullable
-   */
-  notes?: string | null;
   reportedBy: string;
   /** @nullable */
   reportedByName?: string | null;

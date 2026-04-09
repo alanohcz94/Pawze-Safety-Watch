@@ -185,33 +185,5 @@ export function createStyles(r: ResponsiveUtils) {
       fontFamily: "Inter_400Regular",
       color: Colors.textTertiary,
     },
-    filterRow: {
-      flexDirection: "row",
-      paddingHorizontal: r.rs(20),
-      marginBottom: 12,
-    },
-    filterChip: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      paddingHorizontal: r.rs(14),
-      paddingVertical: r.rs(7),
-      borderRadius: 20,
-      backgroundColor: Colors.primaryLight,
-      borderWidth: 1.5,
-      borderColor: Colors.primary,
-      minHeight: 36,
-    },
-    filterChipActive: {
-      backgroundColor: Colors.primary,
-    },
-    filterChipText: {
-      fontSize: r.rf(13),
-      fontFamily: "Inter_600SemiBold",
-      color: Colors.primary,
-    },
-    filterChipTextActive: {
-      color: "#FFF",
-    },
   });
 }

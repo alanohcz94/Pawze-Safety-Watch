@@ -58,7 +58,6 @@
   },
   "dependencies": {
     "expo-auth-session": "~7.0.10",
-    "expo-av": "^16.0.8",
     "expo-crypto": "~15.0.8",
     "expo-image-manipulator": "~14.0.8",
     "expo-modules-core": "~3.0.29",

@@ -214,8 +214,6 @@ const HazardMap = React.memo(function HazardMap({
   );
 });
 
-const NEARBY_SUMMARY_RADIUS_METERS = 200;
-
 export default function MapScreen() {
   const r = useResponsive();
   const styles = useMemo(() => createStyles(r), [r]);
@@ -262,7 +260,6 @@ export default function MapScreen() {
     lat: number;
     lng: number;
   } | null>(null);
-  const [activeFilter, setActiveFilter] = useState<HazardCategory | null>(null);
 
   const currentAreaLat = userLocation?.lat ?? DEFAULT_REGION.latitude;
   const currentAreaLng = userLocation?.lng ?? DEFAULT_REGION.longitude;
@@ -276,22 +273,15 @@ export default function MapScreen() {
     queryFn: () => fetchHazards(centerLat, centerLng, alertRadiusMeters),
     refetchInterval: 30000,
   });
-  const filteredHazards = useMemo(
-    () =>
-      activeFilter
-        ? hazards.filter((h) => h.category === activeFilter)
-        : hazards,
-    [hazards, activeFilter],
-  );
   const { data: currentAreaSummary = null, isLoading: loadingCurrentAreaSummary } =
     useQuery({
       queryKey: queryKeys.hazardSummary.detail(
         currentAreaLat,
         currentAreaLng,
-        NEARBY_SUMMARY_RADIUS_METERS,
+        alertRadiusMeters,
       ),
       queryFn: () =>
-        fetchHazardSummary(currentAreaLat, currentAreaLng, NEARBY_SUMMARY_RADIUS_METERS),
+        fetchHazardSummary(currentAreaLat, currentAreaLng, alertRadiusMeters),
       enabled: locationReady,
     });
   const {
@@ -301,10 +291,10 @@ export default function MapScreen() {
     queryKey: queryKeys.hazardSummary.detail(
       searchedAreaLat,
       searchedAreaLng,
-      NEARBY_SUMMARY_RADIUS_METERS,
+      alertRadiusMeters,
     ),
     queryFn: () =>
-      fetchHazardSummary(searchedAreaLat, searchedAreaLng, NEARBY_SUMMARY_RADIUS_METERS),
+      fetchHazardSummary(searchedAreaLat, searchedAreaLng, alertRadiusMeters),
     enabled: !!queryCenter,
   });
   const { data: currentAreaWeather = null, isLoading: loadingCurrentAreaWeather } =
@@ -628,7 +618,6 @@ export default function MapScreen() {
     };
 
     categoryIndexRef.current = {};
-    setActiveFilter(null);
     mapRef.current?.animateToRegion(newRegion, 600);
     setSearchLocation(label);
     setSearchedAreaName(label);
@@ -660,7 +649,6 @@ export default function MapScreen() {
     }
 
     categoryIndexRef.current = {};
-    setActiveFilter(null);
     setSearchLocation("");
     setSearchedAreaName("");
     setQueryCenter(null);
@@ -676,14 +664,7 @@ export default function MapScreen() {
 
   const handleCategoryPress = useCallback(
     (category: string) => {
-      const activeLat = queryCenter?.lat ?? currentAreaLat;
-      const activeLng = queryCenter?.lng ?? currentAreaLng;
-      const matching = hazards.filter(
-        (h) =>
-          h.category === category &&
-          haversineDistance(activeLat, activeLng, h.lat, h.lng) <=
-            NEARBY_SUMMARY_RADIUS_METERS,
-      );
+      const matching = hazards.filter((h) => h.category === category);
       if (matching.length === 0) return;
 
       const current = categoryIndexRef.current[category] ?? 0;
@@ -706,7 +687,7 @@ export default function MapScreen() {
       setShowDetail(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     },
-    [hazards, queryCenter, currentAreaLat, currentAreaLng],
+    [hazards],
   );
 
   const showStepCounterChip =
@@ -756,7 +737,7 @@ export default function MapScreen() {
       {/* Map content area (flex:1, relative) */}
       <View style={styles.mapContent}>
       <HazardMap
-        hazards={filteredHazards}
+        hazards={hazards}
         initialRegion={initialRegion}
         mapPaddingBottom={Math.max(insets.bottom, 14) + r.rs(330)}
         mapPaddingTop={insets.top + r.rs(72)}
@@ -839,8 +820,6 @@ export default function MapScreen() {
               displayText={searchLocation}
               onRecenter={handleRecenter}
               recenterDisabled={!userLocation}
-              activeFilter={activeFilter}
-              onFilterChange={setActiveFilter}
             />
           </View>
 

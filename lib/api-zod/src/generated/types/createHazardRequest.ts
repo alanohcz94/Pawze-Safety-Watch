@@ -13,9 +13,4 @@ export interface CreateHazardRequest {
   lng: number;
   /** @nullable */
   photoUrl?: string | null;
-  /**
-   * Optional voice transcript or typed note describing the hazard.
-   * @nullable
-   */
-  notes?: string | null;
 }

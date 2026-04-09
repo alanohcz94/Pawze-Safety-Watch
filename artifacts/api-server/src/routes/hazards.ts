@@ -42,7 +42,6 @@ function serializeHazard(
     lat: number;
     lng: number;
     photoUrl: string | null;
-    notes?: string | null;
     reportedBy: string;
     reportedByName?: string | null;
     reportedAt: Date;
@@ -57,7 +56,6 @@ function serializeHazard(
     lat: hazard.lat,
     lng: hazard.lng,
     photoUrl: hazard.photoUrl,
-    notes: hazard.notes ?? null,
     reportedBy: hazard.reportedBy,
     reportedByName: hazard.reportedByName ?? null,
     reportedAt: hazard.reportedAt.toISOString(),
@@ -121,7 +119,6 @@ router.get("/hazards", async (req: Request, res: Response) => {
       lat: hazardsTable.lat,
       lng: hazardsTable.lng,
       photoUrl: hazardsTable.photoUrl,
-      notes: hazardsTable.notes,
       reportedBy: hazardsTable.reportedBy,
       reportedAt: hazardsTable.reportedAt,
       expiresAt: hazardsTable.expiresAt,
@@ -169,7 +166,7 @@ router.post("/hazards", async (req: Request, res: Response) => {
     return;
   }
 
-  const { category, lat, lng, photoUrl, notes } = req.body as CreateHazardRequest;
+  const { category, lat, lng, photoUrl } = req.body as CreateHazardRequest;
   if (!category || typeof lat !== "number" || typeof lng !== "number") {
     res.status(400).json({ error: "Invalid request body: category, lat, lng required" });
     return;
@@ -190,7 +187,6 @@ router.post("/hazards", async (req: Request, res: Response) => {
       lat,
       lng,
       photoUrl: photoUrl ?? null,
-      notes: typeof notes === "string" && notes.trim().length > 0 ? notes.trim() : null,
       reportedBy: req.user.id,
       reportedAt,
       expiresAt,

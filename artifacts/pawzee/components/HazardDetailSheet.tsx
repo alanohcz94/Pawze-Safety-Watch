@@ -358,13 +358,6 @@ export function HazardDetailSheet({
           )}
         </View>
 
-        {hazard.notes && hazard.notes.trim().length > 0 && (
-          <View style={styles.notesCard}>
-            <Ionicons name="chatbubble-ellipses-outline" size={16} color={Colors.textSecondary} />
-            <Text style={styles.notesText}>{hazard.notes}</Text>
-          </View>
-        )}
-
         <View style={styles.actions}>
           <Pressable
             style={[styles.actionBtn, styles.navigateBtn]}

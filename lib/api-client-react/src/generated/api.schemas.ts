@@ -75,11 +75,6 @@ export interface HazardItem {
   lng: number;
   /** @nullable */
   photoUrl?: string | null;
-  /**
-   * Optional voice transcript or typed note attached to the hazard report.
-   * @nullable
-   */
-  notes?: string | null;
   reportedBy: string;
   /** @nullable */
   reportedByName?: string | null;
@@ -98,18 +93,11 @@ export interface CreateHazardRequest {
   lng: number;
   /** @nullable */
   photoUrl?: string | null;
-  /**
-   * Optional voice transcript or typed note describing the hazard.
-   * @nullable
-   */
-  notes?: string | null;
 }
 
 export interface ConfirmHazardRequest {
   lat: number;
   lng: number;
-  /** @nullable */
-  photoUrl?: string | null;
 }
 
 export interface UploadPhotoResponse {

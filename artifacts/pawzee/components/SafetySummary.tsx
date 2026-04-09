@@ -97,7 +97,7 @@ export function SafetySummaryDashboard({
         <>
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Nearby Reports Today</Text>
+              <Text style={styles.statLabel}>Reported Today</Text>
               <Text style={styles.statNumber}>{reportedTodayValue}</Text>
               <Text style={styles.statMeta}>New reports nearby</Text>
             </View>
@@ -107,7 +107,7 @@ export function SafetySummaryDashboard({
               onPress={() => setView("breakdown")}
               disabled={!hasSummary || loading}
             >
-              <Text style={styles.statLabel}>Nearby Hazards</Text>
+              <Text style={styles.statLabel}>Active Hazards</Text>
               <View style={styles.activeHazardsRow}>
                 <Text style={styles.statNumber}>{activeHazardsValue}</Text>
                 <Ionicons
@@ -133,10 +133,10 @@ export function SafetySummaryDashboard({
       ) : (
         <>
           <View style={styles.breakdownHeader}>
-            <Text style={styles.breakdownTitle}>Nearby hazard categories</Text>
+            <Text style={styles.breakdownTitle}>Active hazard categories</Text>
             <Text style={styles.breakdownSubtitle}>
               {hasSummary
-                ? `${summary?.activeHazards ?? 0} nearby hazards`
+                ? `${summary?.activeHazards ?? 0} active hazards`
                 : "No data"}
             </Text>
           </View>
