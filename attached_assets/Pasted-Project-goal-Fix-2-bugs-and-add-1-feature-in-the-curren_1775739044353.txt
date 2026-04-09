@@ -1,0 +1,124 @@
+Project goal:
+Fix 2 bugs and add 1 feature in the current reverted codebase.
+
+==================================================
+1) ADD FEATURE: 24hrs vet toggle button in ER
+==================================================
+
+Please add a toggle button in the ER / Emergency Vet section called:
+
+"24hrs vets only"
+
+Required behavior:
+- When toggle is OFF:
+  - show all nearby vets as the current reverted version does now
+- When toggle is ON:
+  - first filter the current nearby vet list and show only 24hrs vets
+  - if the current nearby vet list has no 24hrs vets, then fall back to all known 24hrs vets
+  - for the fallback list, calculate distance from the user’s current location
+  - sort by nearest first
+- Keep the existing ER layout and current logic as much as possible
+- Do not break the existing nearby vet behavior
+
+Implementation notes:
+- Reuse current vet data/services if possible
+- Add a helper like is24HourVet(vet) if needed
+- Make the toggle state local to the ER screen/component unless a shared state is required
+- Keep the UI simple and production-safe
+
+Acceptance criteria:
+- Toggle visible in ER
+- OFF = all nearby vets
+- ON = nearby 24hrs vets only
+- If none nearby are 24hrs, show fallback 24hrs vets sorted by closest distance
+- No regression to current ER list behavior
+
+==================================================
+2) FIX BUG: attachment image shows blank when viewing someone else’s post
+==================================================
+
+This is important.
+
+Current issue:
+- When another user posts a picture attachment, opening the details view shows a blank image
+
+Please fully trace and fix the attachment flow:
+- find where image/photo attachment is selected
+- find where it is uploaded
+- find what exact field is saved into the database / backend
+- find what exact field is used on the details screen/modal
+- confirm whether the app is saving:
+  - a local file URI by mistake
+  - an expired signed URL
+  - the wrong field name
+  - a URL that another user cannot access
+- confirm whether the rendered image component is pointing to the correct remote URL
+
+Requirements:
+- ensure the saved image reference is a usable remote URL for other users
+- ensure the detail screen renders the correct field
+- add proper image fallback handling
+- add useful logs for:
+  - stored image field value
+  - final image URI used in render
+  - image load failure
+- do not change the UI unnecessarily
+
+Acceptance criteria:
+- A photo uploaded by User A can be opened by User B
+- No blank image on detail view if the attachment exists
+- Correct field is rendered consistently for old and new records where possible
+- Error logging is clear if image fails to load
+
+==================================================
+3) FIX BUG: weather rain % seems inaccurate
+==================================================
+
+Current issue:
+- the weather rain percentage shown in the app does not seem accurate
+- I need you to find where the rain % is coming from, how it is calculated, and fix it if wrong
+
+Please audit the full weather flow:
+- identify the exact weather API/service being used
+- identify the exact endpoint being called
+- identify the exact response field used for rain percentage / precipitation probability
+- identify whether the value is already a percentage or needs conversion
+- identify where the UI formats and displays the final percentage
+- fix incorrect conversion or wrong field mapping if present
+
+Requirements:
+- add debugging logs for:
+  - raw weather response
+  - mapped rain field
+  - displayed rain %
+- explain in comments or output:
+  - where the rain information is coming from
+  - whether it is API-provided probability or app-calculated
+- do not change unrelated weather UI
+
+Acceptance criteria:
+- Rain % is sourced from the correct field
+- Conversion is correct
+- Displayed rain % matches the intended API data
+- Output clearly states where the number comes from
+
+==================================================
+OUTPUT REQUIRED
+==================================================
+
+Before finishing, please give me:
+
+1. List of files changed
+2. Root cause of the attachment image bug
+3. The exact source field / endpoint for rain %
+4. Summary of how rain % is calculated or transformed
+5. Code diff or clear before/after explanation for each of the 3 items
+6. Any assumptions made
+7. Confirmation that no removed mic feature or old code-filter search behavior was reintroduced
+
+Important:
+- Work only on the current reverted codebase
+- Keep changes focused and minimal
+- Do not refactor unrelated areas
+- Do not ask me broad questions first; inspect the codebase and proceed
+- If there are multiple possible attachment fields or weather fields, trace the real one currently used in production code
