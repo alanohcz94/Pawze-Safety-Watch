@@ -110,11 +110,7 @@ export function EmergencyVetSheet({
     const nearby24hr = vets.filter(is24HourVet);
     if (nearby24hr.length > 0) return nearby24hr;
 
-    if (isInSingapore(lat, lng)) {
-      return getAllSingapore24hrVets(lat, lng);
-    }
-
-    return [];
+    return getAllSingapore24hrVets(lat, lng);
   };
 
   const displayedVets = getDisplayedVets();

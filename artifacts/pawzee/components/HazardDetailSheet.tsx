@@ -67,12 +67,14 @@ export function HazardDetailSheet({
   const [confirming, setConfirming] = useState(false);
   const [updatingPhoto, setUpdatingPhoto] = useState(false);
   const [currentView, setCurrentView] = useState<SheetView>("sheet");
+  const [photoLoadFailed, setPhotoLoadFailed] = useState(false);
 
   useEffect(() => {
     if (visible) {
       setCurrentView("sheet");
       setConfirming(false);
       setUpdatingPhoto(false);
+      setPhotoLoadFailed(false);
     }
   }, [visible]);
 
@@ -243,24 +245,34 @@ export function HazardDetailSheet({
           <View style={styles.photoCard}>
             <Pressable
               style={styles.photoPreviewBtn}
-              onPress={() => setCurrentView("photo")}
+              onPress={() => !photoLoadFailed && setCurrentView("photo")}
             >
-              <Image
-                source={{ uri: hazard.photoUrl! }}
-                style={styles.photo}
-                contentFit="cover"
-                onLoadStart={() => {
-                  console.log("[photo] stored photoUrl:", hazard.photoUrl);
-                  console.log("[photo] rendering uri:", hazard.photoUrl);
-                }}
-                onError={(e) => {
-                  console.warn("[photo] load failed for uri:", hazard.photoUrl, e.error ?? "");
-                }}
-              />
-              <View style={styles.photoPreviewHint}>
-                <Ionicons name="expand-outline" size={16} color="#FFF" />
-                <Text style={styles.photoPreviewHintText}>View Photo</Text>
-              </View>
+              {photoLoadFailed ? (
+                <View style={styles.photoUnavailable}>
+                  <Ionicons name="image-outline" size={28} color={Colors.textTertiary} />
+                  <Text style={styles.photoUnavailableText}>Photo unavailable</Text>
+                </View>
+              ) : (
+                <>
+                  <Image
+                    source={{ uri: hazard.photoUrl! }}
+                    style={styles.photo}
+                    contentFit="cover"
+                    onLoadStart={() => {
+                      console.log("[photo] stored photoUrl:", hazard.photoUrl);
+                      console.log("[photo] rendering uri:", hazard.photoUrl);
+                    }}
+                    onError={(e) => {
+                      console.warn("[photo] load failed for uri:", hazard.photoUrl, e.error ?? "");
+                      setPhotoLoadFailed(true);
+                    }}
+                  />
+                  <View style={styles.photoPreviewHint}>
+                    <Ionicons name="expand-outline" size={16} color="#FFF" />
+                    <Text style={styles.photoPreviewHintText}>View Photo</Text>
+                  </View>
+                </>
+              )}
             </Pressable>
 
             {sheetState.showEditPhotoOverlay && (
@@ -430,17 +442,25 @@ export function HazardDetailSheet({
         <Ionicons name="close" size={28} color="#FFF" />
       </Pressable>
       {hazard.photoUrl && (
-        <Image
-          source={{ uri: hazard.photoUrl }}
-          style={styles.fullPhoto}
-          contentFit="contain"
-          onLoadStart={() => {
-            console.log("[photo:full] uri:", hazard.photoUrl);
-          }}
-          onError={(e) => {
-            console.warn("[photo:full] load failed:", hazard.photoUrl, e.error ?? "");
-          }}
-        />
+        photoLoadFailed ? (
+          <View style={styles.fullPhotoUnavailable}>
+            <Ionicons name="image-outline" size={48} color="rgba(255,255,255,0.4)" />
+            <Text style={styles.fullPhotoUnavailableText}>Photo unavailable</Text>
+          </View>
+        ) : (
+          <Image
+            source={{ uri: hazard.photoUrl }}
+            style={styles.fullPhoto}
+            contentFit="contain"
+            onLoadStart={() => {
+              console.log("[photo:full] uri:", hazard.photoUrl);
+            }}
+            onError={(e) => {
+              console.warn("[photo:full] load failed:", hazard.photoUrl, e.error ?? "");
+              setPhotoLoadFailed(true);
+            }}
+          />
+        )
       )}
     </View>
   );

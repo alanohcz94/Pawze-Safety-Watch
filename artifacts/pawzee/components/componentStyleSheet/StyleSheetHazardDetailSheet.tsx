@@ -221,5 +221,29 @@ export function createStyles(r: ResponsiveUtils) {
       width: "100%",
       height: "80%",
     },
+    photoUnavailable: {
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 12,
+      backgroundColor: Colors.surfaceSecondary,
+      paddingVertical: r.rs(28),
+      paddingHorizontal: 20,
+      gap: 8,
+    },
+    photoUnavailableText: {
+      fontSize: r.rf(13),
+      fontFamily: "Inter_400Regular",
+      color: Colors.textTertiary,
+    },
+    fullPhotoUnavailable: {
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 12,
+    },
+    fullPhotoUnavailableText: {
+      fontSize: r.rf(15),
+      fontFamily: "Inter_400Regular",
+      color: "rgba(255,255,255,0.5)",
+    },
   });
 }
