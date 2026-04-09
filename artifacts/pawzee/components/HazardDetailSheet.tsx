@@ -249,6 +249,13 @@ export function HazardDetailSheet({
                 source={{ uri: hazard.photoUrl! }}
                 style={styles.photo}
                 contentFit="cover"
+                onLoadStart={() => {
+                  console.log("[photo] stored photoUrl:", hazard.photoUrl);
+                  console.log("[photo] rendering uri:", hazard.photoUrl);
+                }}
+                onError={(e) => {
+                  console.warn("[photo] load failed for uri:", hazard.photoUrl, e.error ?? "");
+                }}
               />
               <View style={styles.photoPreviewHint}>
                 <Ionicons name="expand-outline" size={16} color="#FFF" />
@@ -427,6 +434,12 @@ export function HazardDetailSheet({
           source={{ uri: hazard.photoUrl }}
           style={styles.fullPhoto}
           contentFit="contain"
+          onLoadStart={() => {
+            console.log("[photo:full] uri:", hazard.photoUrl);
+          }}
+          onError={(e) => {
+            console.warn("[photo:full] load failed:", hazard.photoUrl, e.error ?? "");
+          }}
         />
       )}
     </View>

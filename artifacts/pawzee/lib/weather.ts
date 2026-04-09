@@ -20,6 +20,7 @@ export interface AreaWeatherReport {
 }
 
 interface OpenMeteoResponse {
+  utc_offset_seconds?: number;
   current?: {
     time: string;
     temperature_2m: number;
@@ -154,6 +155,14 @@ export async function fetchAreaWeather(
     throw new Error("Weather response missing required fields");
   }
 
+  const utcOffsetSeconds = data.utc_offset_seconds ?? 0;
+  console.log(
+    `[weather] utc_offset_seconds=${utcOffsetSeconds}`,
+    `current.time="${data.current.time}"`,
+    `raw precip array sample (first 5):`,
+    data.hourly.precipitation_probability?.slice(0, 5),
+  );
+
   const forecast = buildRollingWeatherForecast({
     current: {
       time: data.current.time,
@@ -167,6 +176,7 @@ export async function fetchAreaWeather(
       weatherCode: data.hourly.weather_code,
       precipitationProbability: data.hourly.precipitation_probability,
     },
+    utcOffsetSeconds,
   });
 
   return {

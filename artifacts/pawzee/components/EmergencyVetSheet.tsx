@@ -23,6 +23,10 @@ function isInSingapore(lat: number, lng: number): boolean {
   return lat >= 1.15 && lat <= 1.47 && lng >= 103.6 && lng <= 104.1;
 }
 
+function is24HourVet(vet: VetClinic): boolean {
+  return vet.emergency === true;
+}
+
 function getSingaporeEmergencyFallbacks(lat: number, lng: number): VetClinic[] {
   return SINGAPORE_ER_VETS.map((vet) => ({
     ...vet,
@@ -30,6 +34,13 @@ function getSingaporeEmergencyFallbacks(lat: number, lng: number): VetClinic[] {
   }))
     .filter((vet) => vet.distance <= VET_SEARCH_RADIUS_METERS)
     .sort((a, b) => a.distance - b.distance);
+}
+
+function getAllSingapore24hrVets(lat: number, lng: number): VetClinic[] {
+  return SINGAPORE_ER_VETS.map((vet) => ({
+    ...vet,
+    distance: Math.round(haversineDistance(lat, lng, vet.lat, vet.lng)),
+  })).sort((a, b) => a.distance - b.distance);
 }
 
 interface EmergencyVetSheetProps {
@@ -50,6 +61,7 @@ export function EmergencyVetSheet({
   const [loading, setLoading] = useState(false);
   const [vets, setVets] = useState<VetClinic[]>([]);
   const [searchDone, setSearchDone] = useState(false);
+  const [show24HrOnly, setShow24HrOnly] = useState(false);
 
   useEffect(() => {
     if (visible && !searchDone) {
@@ -88,6 +100,27 @@ export function EmergencyVetSheet({
     setLoading(false);
     setSearchDone(true);
   };
+
+  const getDisplayedVets = (): VetClinic[] => {
+    if (!show24HrOnly) return vets;
+
+    const lat = userLat ?? 37.7749;
+    const lng = userLng ?? -122.4194;
+
+    const nearby24hr = vets.filter(is24HourVet);
+    if (nearby24hr.length > 0) return nearby24hr;
+
+    if (isInSingapore(lat, lng)) {
+      return getAllSingapore24hrVets(lat, lng);
+    }
+
+    return [];
+  };
+
+  const displayedVets = getDisplayedVets();
+
+  const isFallbackMode =
+    show24HrOnly && vets.filter(is24HourVet).length === 0 && displayedVets.length > 0;
 
   const handleCall = (phone: string) => {
     const cleaned = phone.replace(/[^\d+]/g, "");
@@ -188,18 +221,50 @@ export function EmergencyVetSheet({
             </Pressable>
           </View>
 
-          <Text style={styles.sheetSubtitle}>
-            Nearest veterinary clinics from OpenStreetMap
-          </Text>
+          <View style={styles.filterRow}>
+            <Text style={styles.sheetSubtitle}>
+              Nearest veterinary clinics from OpenStreetMap
+            </Text>
+            <Pressable
+              style={[
+                styles.togglePill,
+                show24HrOnly && styles.togglePillActive,
+              ]}
+              onPress={() => setShow24HrOnly((prev) => !prev)}
+            >
+              <Ionicons
+                name="time-outline"
+                size={13}
+                color={show24HrOnly ? "#FFF" : Colors.textSecondary}
+              />
+              <Text
+                style={[
+                  styles.togglePillText,
+                  show24HrOnly && styles.togglePillTextActive,
+                ]}
+              >
+                24hrs only
+              </Text>
+            </Pressable>
+          </View>
+
+          {isFallbackMode && (
+            <View style={styles.fallbackBanner}>
+              <Ionicons name="information-circle-outline" size={15} color={Colors.primary} />
+              <Text style={styles.fallbackBannerText}>
+                No 24hr vets nearby — showing all known 24hr clinics
+              </Text>
+            </View>
+          )}
 
           {loading ? (
             <View style={styles.loaderContainer}>
               <ActivityIndicator size="large" color={Colors.primary} />
               <Text style={styles.loaderText}>Searching nearby clinics...</Text>
             </View>
-          ) : vets.length > 0 ? (
+          ) : displayedVets.length > 0 ? (
             <FlatList
-              data={vets}
+              data={displayedVets}
               keyExtractor={(item) => item.id}
               renderItem={renderVet}
               contentContainerStyle={styles.listContent}
@@ -225,7 +290,11 @@ export function EmergencyVetSheet({
                 size={48}
                 color={Colors.textTertiary}
               />
-              <Text style={styles.emptyText}>No clinics found nearby</Text>
+              <Text style={styles.emptyText}>
+                {show24HrOnly
+                  ? "No 24hr clinics found nearby"
+                  : "No clinics found nearby"}
+              </Text>
               <Text style={styles.emptySubtext}>
                 Try searching in your Maps app instead
               </Text>
